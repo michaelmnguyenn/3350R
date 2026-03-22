@@ -13,7 +13,10 @@ suppressPackageStartupMessages({
   library(FinTS)
 })
 
-setwd("/Users/michael/Downloads/ECON3350")
+setwd(tryCatch(
+  dirname(rstudioapi::getActiveDocumentContext()$path),
+  error = function(e) getwd()
+))
 cat("Working directory:", getwd(), "\n\n")
 
 # ============================================================
@@ -471,18 +474,19 @@ fit_garch_best <- function(returns, dates, label) {
   cat("Significant ACF lags:", if(length(sig_lags_acf)==0) "none" else sig_lags_acf, "\n")
   cat("Significant PACF lags:", if(length(sig_lags_pacf)==0) "none" else sig_lags_pacf, "\n")
 
-  # Step 3: Grid search over ARMA orders × distributions
-  mean_orders <- list(c(0,0), c(1,0), c(0,1), c(1,1))
-  dists       <- c("norm", "std")
-  garch_orders <- list(c(1,1))  # GARCH(1,1) is standard
+  # Step 3: Grid search over ARMA orders × GARCH models × distributions
+  # Use GJR-GARCH to capture leverage/asymmetric volatility effects
+  mean_orders  <- list(c(0,0), c(1,0), c(0,1), c(1,1))
+  dists        <- c("norm", "std")
+  garch_orders <- list(c(1,1))  # GJR-GARCH(1,1) is standard
 
   results <- list()
   for (mo in mean_orders) {
     for (dist in dists) {
       for (go in garch_orders) {
-        tag <- sprintf("ARMA(%d,%d)-GARCH(%d,%d)-%s", mo[1], mo[2], go[1], go[2], dist)
+        tag <- sprintf("ARMA(%d,%d)-GJR-GARCH(%d,%d)-%s", mo[1], mo[2], go[1], go[2], dist)
         spec <- ugarchspec(
-          variance.model   = list(model = "sGARCH", garchOrder = go),
+          variance.model   = list(model = "gjrGARCH", garchOrder = go),
           mean.model       = list(armaOrder = mo, include.mean = TRUE),
           distribution.model = dist)
         fit <- tryCatch(
@@ -552,23 +556,26 @@ cat("============================================================\n\n")
 uncond_var_garch <- function(res, label, var_sample) {
   fit <- res$fit
   cf  <- coef(fit)
-  # GARCH(1,1): omega, alpha1, beta1
+  # GJR-GARCH(1,1): omega, alpha1, beta1, gamma1
+  # Unconditional variance: omega / (1 - alpha - beta - gamma/2)
   omega <- cf["omega"]
   alpha <- cf["alpha1"]
   beta  <- cf["beta1"]
-  ab    <- alpha + beta
+  gamma <- cf["gamma1"]
+  persistence <- alpha + beta + gamma / 2
   cat(label, ": omega=", round(omega,6), " alpha=", round(alpha,4),
-      " beta=", round(beta,4), " alpha+beta=", round(ab,6), "\n", sep="")
-  if (ab < 1) {
-    v <- omega / (1 - ab)
+      " beta=", round(beta,4), " gamma=", round(gamma,4),
+      " persistence (alpha+beta+gamma/2)=", round(persistence,6), "\n", sep="")
+  if (persistence < 1) {
+    v <- omega / (1 - persistence)
     cat(label, ": Unconditional variance (model) =", round(v,6),
         " | sample =", round(var_sample, 6), "\n")
-    return(data.frame(Currency=label, AlphaBeta=round(ab,4),
+    return(data.frame(Currency=label, Persistence=round(persistence,4),
       Var_Model=round(v,6), Var_Sample=round(var_sample,6),
       Ratio=round(v/var_sample,4)))
   } else {
-    cat(label, ": IGARCH (alpha+beta >= 1) — unconditional variance undefined\n")
-    return(data.frame(Currency=label, AlphaBeta=round(ab,4),
+    cat(label, ": IGARCH (persistence >= 1) — unconditional variance undefined\n")
+    return(data.frame(Currency=label, Persistence=round(persistence,4),
       Var_Model=NA, Var_Sample=round(var_sample,6), Ratio=NA))
   }
 }

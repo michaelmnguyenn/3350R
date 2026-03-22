@@ -2,7 +2,10 @@ rm(list = ls())
 library(readxl)
 library(forecast)
 
-setwd("/Users/michael/Downloads/ECON3350")
+setwd(tryCatch(
+  dirname(rstudioapi::getActiveDocumentContext()$path),
+  error = function(e) getwd()
+))
 
 df <- read_excel("MacroData (1).xlsx", sheet = "data")
 names(df)[1:5] <- c("date", "p", "r", "y", "c")
@@ -40,13 +43,23 @@ pf2 <- as.numeric(fc2$mean)[1:7]
 pf3 <- as.numeric(fc3$mean)[1:7]
 
 # forecast evaluation metrics
-MSFE <- function(actual, pred) mean((actual - pred)^2)
-MAE  <- function(actual, pred) mean(abs(actual - pred))
+MSFE  <- function(actual, pred) mean((actual - pred)^2)
+RMSFE <- function(actual, pred) sqrt(mean((actual - pred)^2))
+MAE   <- function(actual, pred) mean(abs(actual - pred))
 
+cat("MSFE:\n")
 MSFE(actual_dpt, pf1); MSFE(actual_dpt, pf2); MSFE(actual_dpt, pf3)
+cat("RMSFE:\n")
+RMSFE(actual_dpt, pf1); RMSFE(actual_dpt, pf2); RMSFE(actual_dpt, pf3)
+cat("MAE:\n")
 MAE(actual_dpt,  pf1); MAE(actual_dpt,  pf2); MAE(actual_dpt,  pf3)
 
-# quarter by quarter comparison
+# summary table with all metrics
+data.frame(
+  model  = c("ARMA(2,1)", "ARMA(1,2)", "ARMA(3,0)"),
+  MSFE   = c(MSFE(actual_dpt, pf1),  MSFE(actual_dpt, pf2),  MSFE(actual_dpt, pf3)),
+  RMSFE  = c(RMSFE(actual_dpt, pf1), RMSFE(actual_dpt, pf2), RMSFE(actual_dpt, pf3)),
+  MAE    = c(MAE(actual_dpt, pf1),   MAE(actual_dpt, pf2),   MAE(actual_dpt, pf3)))
 data.frame(
   quarter = c("2024Q1", "2024Q2", "2024Q3", "2024Q4", "2025Q1", "2025Q2", "2025Q3"),
   actual  = round(actual_dpt, 5),

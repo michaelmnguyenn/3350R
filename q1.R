@@ -1,7 +1,10 @@
 rm(list = ls())
 library(readxl)
 
-setwd("/Users/michael/Downloads/ECON3350")
+setwd(tryCatch(
+  dirname(rstudioapi::getActiveDocumentContext()$path),
+  error = function(e) getwd()
+))
 
 df <- read_excel("MacroData (1).xlsx", sheet = "data")
 names(df)[1:5] <- c("date", "p", "r", "y", "c")

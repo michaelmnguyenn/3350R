@@ -4,7 +4,10 @@ library(forecast)
 library(rugarch)
 library(dplyr)
 
-setwd("/Users/michael/Downloads/ECON3350")
+setwd(tryCatch(
+  dirname(rstudioapi::getActiveDocumentContext()$path),
+  error = function(e) getwd()
+))
 
 ex <- read_excel("EXRATE (1).xlsx", sheet = "All")
 ex <- ex[, 1:5]
@@ -148,11 +151,11 @@ fit_garch_series <- function(ret, series_name)
 
   # step 6: volatility plot for best model
   best_ag_idx <- adq_idx[1]
-  sig <- AG_est[[best_ag_idx]]@fit$var
+  sig <- as.numeric(sigma(AG_est[[best_ag_idx]]))
   best_name <- paste0("ARMA(", adq_ag[1, 1], ",", adq_ag[1, 2],
                       ")-GJR-GARCH(", adq_ag[1, 3], ",", adq_ag[1, 4], ")")
-  plot(dates, sig, type = "l", xlab = "", ylab = "conditional variance",
-       main = paste(series_name, best_name, "- estimated volatility"))
+  plot(dates, sig, type = "l", xlab = "", ylab = "sigma_t (%)",
+       main = paste(series_name, best_name, "- conditional volatility"))
   Sys.sleep(2)
 
   return(list(AG_est = AG_est, ic_ag = ic_ag, adq_ag = adq_ag, adq_idx = adq_idx))
