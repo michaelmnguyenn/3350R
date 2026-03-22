@@ -2,7 +2,10 @@ rm(list = ls())
 library(readxl)
 library(rugarch)
 
-setwd("/Users/michael/Downloads/ECON3350")
+setwd(tryCatch(
+  dirname(rstudioapi::getActiveDocumentContext()$path),
+  error = function(e) getwd()
+))
 
 ex <- read_excel("EXRATE (1).xlsx", sheet = "All")
 ex <- ex[, 1:5]

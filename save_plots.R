@@ -7,7 +7,10 @@ library(forecast)
 library(aTSA)
 library(rugarch)
 
-setwd("/Users/michael/Downloads/ECON3350")
+setwd(tryCatch(
+  dirname(rstudioapi::getActiveDocumentContext()$path),
+  error = function(e) getwd()
+))
 
 # ---- Q1 plots ----
 df <- read_excel("MacroData (1).xlsx", sheet = "data")

@@ -3,7 +3,10 @@ library(readxl)
 library(forecast)
 library(aTSA)
 
-setwd("/Users/michael/Downloads/ECON3350")
+setwd(tryCatch(
+  dirname(rstudioapi::getActiveDocumentContext()$path),
+  error = function(e) getwd()
+))
 
 df <- read_excel("MacroData (1).xlsx", sheet = "data")
 names(df)[1:5] <- c("date", "p", "r", "y", "c")
@@ -52,11 +55,17 @@ for (p in 0:3)
   }
 }
 
-ic_rr[order(ic_rr[, 3]), ][1:5, ]
-ic_rr[order(ic_rr[, 4]), ][1:5, ]
+ic_rr_sorted_aic <- ic_rr[order(ic_rr[, 3]), ]
+ic_rr_sorted_bic <- ic_rr[order(ic_rr[, 4]), ]
+ic_rr_sorted_aic[1:5, ]
+ic_rr_sorted_bic[1:5, ]
 
-# best model for rr_t
-best_rr <- Arima(rr, order = c(2, 1, 2), seasonal = c(0, 0, 1))
+# best model for rr_t: take the model with lowest AIC from the grid
+best_idx_rr <- which.min(ic_rr[, 3])
+best_p_rr   <- ic_rr[best_idx_rr, 1]
+best_q_rr   <- ic_rr[best_idx_rr, 2]
+cat("Best ARIMA for rr_t: ARIMA(", best_p_rr, ", 1, ", best_q_rr, ")\n")
+best_rr <- Arima(rr, order = c(best_p_rr, 1, best_q_rr))
 summary(best_rr)
 checkresiduals(best_rr)
 
@@ -83,10 +92,16 @@ for (p in 0:3)
   }
 }
 
-ic_cy[order(ic_cy[, 3]), ][1:5, ]
-ic_cy[order(ic_cy[, 4]), ][1:5, ]
+ic_cy_sorted_aic <- ic_cy[order(ic_cy[, 3]), ]
+ic_cy_sorted_bic <- ic_cy[order(ic_cy[, 4]), ]
+ic_cy_sorted_aic[1:5, ]
+ic_cy_sorted_bic[1:5, ]
 
-# best model for cy_t
-best_cy <- Arima(cy, order = c(2, 1, 2))
+# best model for cy_t: take the model with lowest AIC from the grid
+best_idx_cy <- which.min(ic_cy[, 3])
+best_p_cy   <- ic_cy[best_idx_cy, 1]
+best_q_cy   <- ic_cy[best_idx_cy, 2]
+cat("Best ARIMA for cy_t: ARIMA(", best_p_cy, ", 1, ", best_q_cy, ")\n")
+best_cy <- Arima(cy, order = c(best_p_cy, 1, best_q_cy))
 summary(best_cy)
 checkresiduals(best_cy)
