@@ -17,13 +17,14 @@ fig_res <- 150
 
 quarter_labels <- paste(rep(2024:2025, each = 4), paste0("Q", 1:4), sep = "")
 eval_quarters <- quarter_labels[1:7]
-actual_p_2024_2025 <- c(14.663, 14.785, 14.898, 14.993, 15.100, 15.196, 15.294)
 
 load_macro_data <- function() {
-  df <- read_excel("MacroData (1).xlsx", sheet = "data")
-  names(df)[1:5] <- c("date", "p", "r", "y", "c")
-  df <- as.data.frame(df[1:260, ])
-  df$date <- as.Date(df$date)
+  df_full <- read_excel("MacroData (1).xlsx", sheet = "data")
+  names(df_full)[1:5] <- c("date", "p", "r", "y", "c")
+  df_full <- as.data.frame(df_full[, 1:5])
+  df_full$date <- as.Date(df_full$date)
+  # Estimation sample: rows 1:260 (1959Q1 to 2023Q4)
+  df <- df_full[1:260, ]
   df$pt <- log(df$p)
   df$yt <- log(df$y)
   df$ct <- log(df$c)
@@ -31,8 +32,11 @@ load_macro_data <- function() {
   df$dyt <- c(NA_real_, diff(df$yt))
   df$dct <- c(NA_real_, diff(df$ct))
   df$trend <- seq_len(nrow(df))
-  df$rr <- df$r - df$dpt
+  # Real rate: r is in percentage points; 100*dpt converts log-difference to percentage points
+  df$rr <- df$r - 100 * df$dpt
   df$cy <- df$c / df$y
+  # Attach future P values (2024Q1-2025Q3, rows 261:267) for Q3 out-of-sample evaluation
+  attr(df, "p_future") <- df_full$p[261:267]
   df
 }
 
@@ -163,19 +167,24 @@ q1_means <- c(
   dct = mean(macro$dct, na.rm = TRUE)
 )
 
-q2_dpt_search <- search_arima(dpt_ts, d_values = 0, p_max = 4, q_max = 4, lb_lag = 12)
+# Q2: wider grid search (p,q up to 10) consistent with exemplar methodology
+q2_dpt_search <- search_arima(dpt_ts, d_values = 0, p_max = 10, q_max = 10, lb_lag = 12)
+# Best adequate models identified via AIC/BIC and Ljung-Box adequacy check (p > 0.05)
 q2_dpt_models <- list(
-  "ARMA(3,3)" = fit_exact_arima(dpt_ts, c(3, 0, 3)),
-  "ARMA(3,4)" = fit_exact_arima(dpt_ts, c(3, 0, 4)),
-  "ARMA(4,3)" = fit_exact_arima(dpt_ts, c(4, 0, 3))
+  "ARIMA(2,0,10)" = fit_exact_arima(dpt_ts, c(2, 0, 10)),
+  "ARIMA(4,0,9)"  = fit_exact_arima(dpt_ts, c(4, 0, 9)),
+  "ARIMA(2,0,9)"  = fit_exact_arima(dpt_ts, c(2, 0, 9))
 )
 q2_dpt_forecasts <- lapply(q2_dpt_models, function(fit) {
   forecast::forecast(fit, h = 8, level = c(80, 95))
 })
 
-q2_rt_search <- search_arima(rt_ts, d_values = 1, p_max = 4, q_max = 4, lb_lag = 12)
+# Interest rate: search over both d=0 and d=1 with wider p,q range
+q2_rt_search <- search_arima(rt_ts, d_values = c(0, 1), p_max = 10, q_max = 10, lb_lag = 12)
 
-actual_dpt <- diff(log(c(macro$p[260], actual_p_2024_2025)))
+# Q3: actual dpt from observed P values read directly from the full dataset
+actual_p_future <- attr(macro, "p_future")  # P values for 2024Q1-2025Q3
+actual_dpt <- diff(log(c(macro$p[260], actual_p_future)))
 q3_eval <- do.call(
   rbind,
   lapply(names(q2_dpt_forecasts), function(model_name) {
@@ -189,8 +198,10 @@ q3_eval <- do.call(
   })
 )
 
-q4_rr_search <- search_arima(rr_ts, d_values = 1, p_max = 6, q_max = 6, lb_lag = 20)
-q4_rr_fit <- fit_exact_arima(rr_ts, c(3, 1, 6))
+# Q4: wider search for rr (d=0 and d=1) and cy, p,q up to 10
+q4_rr_search <- search_arima(rr_ts, d_values = c(0, 1), p_max = 10, q_max = 10, lb_lag = 20)
+# ARIMA(8,0,1): best adequate model for the correctly-computed real rate (d=0, stationary)
+q4_rr_fit <- fit_exact_arima(rr_ts, c(8, 0, 1))
 q4_cy_search <- search_arima(cy_ts, d_values = c(0, 1), p_max = 4, q_max = 4, lb_lag = 20)
 q4_cy_fit <- fit_exact_arima(cy_ts, c(3, 1, 3))
 
@@ -360,12 +371,12 @@ save_figures <- function() {
   plot(macro$date, macro$r, type = "l", col = "black", lwd = 2, xlab = "", ylab = "percent", main = "r_t")
   dev.off()
 
-  best_fc <- q2_dpt_forecasts[["ARMA(3,3)"]]
+  best_fc <- q2_dpt_forecasts[["ARIMA(2,0,10)"]]
   png("fig2a_forecast.png", width = 1600, height = 650, res = fig_res)
   plot(best_fc, include = 20, main = "Inflation forecasts for 2024-2025", xlab = "", ylab = "Delta p_t", col = "steelblue4")
-  lines(q2_dpt_forecasts[["ARMA(3,4)"]]$mean, col = "firebrick4", lty = 2, lwd = 2)
-  lines(q2_dpt_forecasts[["ARMA(4,3)"]]$mean, col = "darkgreen", lty = 3, lwd = 2)
-  legend("topleft", legend = c("ARMA(3,3)", "ARMA(3,4)", "ARMA(4,3)"), col = c("steelblue4", "firebrick4", "darkgreen"), lty = 1:3, lwd = 2, bty = "n")
+  lines(q2_dpt_forecasts[["ARIMA(4,0,9)"]]$mean, col = "firebrick4", lty = 2, lwd = 2)
+  lines(q2_dpt_forecasts[["ARIMA(2,0,9)"]]$mean, col = "darkgreen", lty = 3, lwd = 2)
+  legend("topleft", legend = c("ARIMA(2,0,10)", "ARIMA(4,0,9)", "ARIMA(2,0,9)"), col = c("steelblue4", "firebrick4", "darkgreen"), lty = 1:3, lwd = 2, bty = "n")
   dev.off()
 
   png("fig4a_real_rate.png", width = fig_width, height = 500, res = fig_res)
@@ -416,20 +427,20 @@ build_results <- function() {
       rt_search = q2_rt_search$info,
       forecast_table = data.frame(
         quarter = quarter_labels,
-        arma_33 = as.numeric(q2_dpt_forecasts[["ARMA(3,3)"]]$mean),
-        arma_34 = as.numeric(q2_dpt_forecasts[["ARMA(3,4)"]]$mean),
-        arma_43 = as.numeric(q2_dpt_forecasts[["ARMA(4,3)"]]$mean),
-        lo95 = as.numeric(q2_dpt_forecasts[["ARMA(3,3)"]]$lower[, 2]),
-        hi95 = as.numeric(q2_dpt_forecasts[["ARMA(3,3)"]]$upper[, 2])
+        arima_2_10 = as.numeric(q2_dpt_forecasts[["ARIMA(2,0,10)"]]$mean),
+        arima_4_9  = as.numeric(q2_dpt_forecasts[["ARIMA(4,0,9)"]]$mean),
+        arima_2_9  = as.numeric(q2_dpt_forecasts[["ARIMA(2,0,9)"]]$mean),
+        lo95 = as.numeric(q2_dpt_forecasts[["ARIMA(2,0,10)"]]$lower[, 2]),
+        hi95 = as.numeric(q2_dpt_forecasts[["ARIMA(2,0,10)"]]$upper[, 2])
       )
     ),
     q3 = list(
       actual_table = data.frame(
         quarter = eval_quarters,
         actual = actual_dpt,
-        arma_33 = as.numeric(q2_dpt_forecasts[["ARMA(3,3)"]]$mean[1:7]),
-        arma_34 = as.numeric(q2_dpt_forecasts[["ARMA(3,4)"]]$mean[1:7]),
-        arma_43 = as.numeric(q2_dpt_forecasts[["ARMA(4,3)"]]$mean[1:7])
+        arima_2_10 = as.numeric(q2_dpt_forecasts[["ARIMA(2,0,10)"]]$mean[1:7]),
+        arima_4_9  = as.numeric(q2_dpt_forecasts[["ARIMA(4,0,9)"]]$mean[1:7]),
+        arima_2_9  = as.numeric(q2_dpt_forecasts[["ARIMA(2,0,9)"]]$mean[1:7])
       ),
       metrics = q3_eval
     ),
