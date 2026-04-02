@@ -176,7 +176,7 @@ q2_dpt_models <- list(
   "ARIMA(2,0,9)"  = fit_exact_arima(dpt_ts, c(2, 0, 9))
 )
 q2_dpt_forecasts <- lapply(q2_dpt_models, function(fit) {
-  forecast::forecast(fit, h = 8, level = c(80, 95))
+  forecast::forecast(fit, h = 8, level = c(68, 95))
 })
 
 # Interest rate: search over both d=0 and d=1 with wider p,q range
@@ -380,8 +380,16 @@ save_figures <- function() {
   dev.off()
 
   png("fig4a_real_rate.png", width = fig_width, height = 500, res = fig_res)
-  plot(macro$date[-1], macro$rr[-1], type = "l", col = "steelblue4", lwd = 2, xlab = "", ylab = "percent", main = "Real interest rate proxy")
-  abline(h = mean(macro$rr[-1], na.rm = TRUE), lty = 2, col = "grey40")
+  matplot(macro$date[-1],
+          cbind(macro$dpt[-1] * 100, macro$rr[-1], macro$r[-1]),
+          type = "l", lty = 1, lwd = 2,
+          col = c("steelblue4", "black", "firebrick4"),
+          xlab = "", ylab = "Percent",
+          main = "Inflation, real interest rate and nominal interest rate")
+  legend("topleft",
+         legend = c("Inflation (100*Δp_t)", "Real rate (rr_t)", "Nominal rate (r_t)"),
+         col = c("steelblue4", "black", "firebrick4"),
+         lty = 1, lwd = 2, bty = "n")
   dev.off()
 
   png("fig4b_consumption_ratio.png", width = fig_width, height = 500, res = fig_res)

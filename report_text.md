@@ -80,16 +80,16 @@ All three interest rate models require a first difference (`d = 1`), consistent 
 
 **Figure 3: `fig2a_forecast.png`**
 
-| Quarter | ARIMA(2,0,10) | ARIMA(4,0,9) | ARIMA(2,0,9) | 95% CI Lower | 95% CI Upper |
-|---|---:|---:|---:|---:|---:|
-| 2024Q1 | 0.008712 | 0.008681 | 0.008697 | 0.006194 | 0.011230 |
-| 2024Q2 | 0.008543 | 0.008498 | 0.008521 | 0.003908 | 0.013178 |
-| 2024Q3 | 0.008948 | 0.008906 | 0.008934 | 0.002389 | 0.015507 |
-| 2024Q4 | 0.008871 | 0.008835 | 0.008862 | 0.000021 | 0.017721 |
-| 2025Q1 | 0.008816 | 0.008791 | 0.008807 | −0.001019 | 0.018651 |
-| 2025Q2 | 0.008883 | 0.008861 | 0.008876 | −0.001688 | 0.019454 |
-| 2025Q3 | 0.008892 | 0.008873 | 0.008888 | −0.002347 | 0.020131 |
-| 2025Q4 | 0.008889 | 0.008874 | 0.008884 | −0.002841 | 0.020619 |
+| Quarter | ARIMA(2,0,10) | ARIMA(4,0,9) | ARIMA(2,0,9) | 68% CI Lower | 68% CI Upper | 95% CI Lower | 95% CI Upper |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 2024Q1 | 0.008712 | 0.008681 | 0.008697 | 0.007498 | 0.009926 | 0.006194 | 0.011230 |
+| 2024Q2 | 0.008543 | 0.008498 | 0.008521 | 0.006237 | 0.010849 | 0.003908 | 0.013178 |
+| 2024Q3 | 0.008948 | 0.008906 | 0.008934 | 0.005679 | 0.012217 | 0.002389 | 0.015507 |
+| 2024Q4 | 0.008871 | 0.008835 | 0.008862 | 0.004447 | 0.013295 | 0.000021 | 0.017721 |
+| 2025Q1 | 0.008816 | 0.008791 | 0.008807 | 0.003815 | 0.013817 | −0.001019 | 0.018651 |
+| 2025Q2 | 0.008883 | 0.008861 | 0.008876 | 0.003607 | 0.014159 | −0.001688 | 0.019454 |
+| 2025Q3 | 0.008892 | 0.008873 | 0.008888 | 0.003273 | 0.014511 | −0.002347 | 0.020131 |
+| 2025Q4 | 0.008889 | 0.008874 | 0.008884 | 0.003024 | 0.014754 | −0.002841 | 0.020619 |
 
 All three models forecast quarterly inflation converging toward a long-run mean just under `0.009`. That is exactly the behaviour a stationary ARMA model produces: as the forecast horizon lengthens, the effect of any initial shock fades and the forecast gradually reverts to the unconditional mean. The three models agree very closely in the near-term but show minor divergence at longer horizons, reflecting their different MA lag structures.
 
@@ -99,7 +99,7 @@ These forecasts are valuable because monetary and fiscal policy decisions are fo
 
 There are several distinct sources of forecast uncertainty, both conceptual and quantitative.
 
-**Innovation uncertainty** is the most fundamental: future shocks cannot be predicted. This is directly visible in the widening confidence intervals. For ARIMA(2,0,10), the 95% interval is roughly `0.005` wide at the one-quarter horizon (2024Q1) and expands to over `0.023` by 2025Q4. This widening makes intuitive sense because errors compound as the horizon grows.
+**Innovation uncertainty** is the most fundamental: future shocks cannot be predicted. This is directly visible in the widening prediction intervals. For ARIMA(2,0,10), the 68% interval spans roughly `0.0025` on each side at the 2024Q1 horizon and widens to around `0.006` by 2025Q4; the 95% interval opens from roughly `0.005` wide in 2024Q1 to over `0.023` by the end of the evaluation window. The fact that both the 68% and 95% bands expand steadily with the forecast horizon makes intuitive sense because errors compound — each additional quarter adds another layer of uncertainty. This widening makes intuitive sense because errors compound as the horizon grows.
 
 **Parameter uncertainty** arises because all estimated coefficients carry sampling error. Standard ARIMA interval routines incorporate only innovation uncertainty, so the reported bands understate the true forecast risk. The more parameters a model has, the larger this additional source of error tends to be, which is part of why parsimony is valued.
 
@@ -141,11 +141,11 @@ This systematic over-prediction is not a model-fitting failure — the ARIMA mod
 
 ### 4(a) Real Interest Rate
 
-**Figure 4: `fig4a_real_rate.png`**
+**Figure 4: `fig4a_real_rate.png`** *(three-series comparison: inflation, real rate, nominal rate)*
 
 The real-rate proxy is constructed as `rr_t = r_t − 100·Δp_t`, where the scaling factor of 100 converts the log-difference `Δp_t` (a decimal) into percentage points so that it is on the same scale as `r_t` (which is already in percent), producing `rr_t` in percentage points. Its sample minimum is approximately `−3.8`, its maximum around `15.0`, and its mean is roughly `3.6`.
 
-Comparing `rr_t` to the nominal rate `r_t` and to scaled inflation `100·Δp_t`, it is clear that inflation is the most stable of the three, averaging between 1 and 3 percent with a fairly narrow band. The real interest rate shows more variation than inflation but is slightly more stable than the nominal rate — the dominant nominal-rate swings, especially the spike to around 15% during the Volcker disinflation, are partly offset by the concurrent high inflation, leaving the real rate in a narrower range. The main volatility in `rr_t` comes from the early 1980s, when the Fed raised nominal rates sharply while inflation was still elevated before falling, creating the peak real rates visible in the plot. More recently, the real rate dips near or below zero after the Global Financial Crisis and edges back up as tightening resumed.
+Plotting all three series together — scaled inflation `100·Δp_t`, the real rate `rr_t`, and the nominal rate `r_t` — makes the relative stability of each immediately clear. Inflation is the most stable of the three, spending most of its history between 1 and 3 percent, with only the 1970s episode creating a wider band. The nominal rate is by far the most volatile in the long-run sense, climbing to around 15% in the early 1980s and then declining for four decades. Crucially, the real rate sits between the two: the spike in nominal rates during the Volcker disinflation was partly offset by contemporaneous high inflation, leaving the real rate in a lower — though still elevated — range. The most important takeaway from the comparison is that the dominant low-frequency swings in the nominal rate are partially but not fully neutralised by inflation, which is why real and nominal rates still move broadly together across long horizons.
 
 From the ARIMA modelling in Question 2, inflation (`d = 0`) and the interest rate framework both converge on `d = 0` for `rr_t` as well, suggesting the real rate is stationary — it fluctuates around a long-run mean, even if that mean-reversion is very slow.
 
