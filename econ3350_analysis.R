@@ -176,11 +176,14 @@ q2_dpt_models <- list(
   "ARIMA(2,0,9)"  = fit_exact_arima(dpt_ts, c(2, 0, 9))
 )
 q2_dpt_forecasts <- lapply(q2_dpt_models, function(fit) {
-  forecast::forecast(fit, h = 8, level = c(80, 95))
+  forecast::forecast(fit, h = 8, level = c(68, 95))
 })
 
 # Interest rate: search over both d=0 and d=1 with wider p,q range
 q2_rt_search <- search_arima(rt_ts, d_values = c(0, 1), p_max = 10, q_max = 10, lb_lag = 12)
+# Extract adequate r_t models (LB p > 0.05), sorted by AIC
+q2_rt_adequate <- q2_rt_search$info[q2_rt_search$info$lb_p > 0.05, ]
+q2_rt_adequate <- q2_rt_adequate[order(q2_rt_adequate$aic), ]
 
 # Q3: actual dpt from observed P values read directly from the full dataset
 actual_p_future <- attr(macro, "p_future")  # P values for 2024Q1-2025Q3
@@ -379,9 +382,27 @@ save_figures <- function() {
   legend("topleft", legend = c("ARIMA(2,0,10)", "ARIMA(4,0,9)", "ARIMA(2,0,9)"), col = c("steelblue4", "firebrick4", "darkgreen"), lty = 1:3, lwd = 2, bty = "n")
   dev.off()
 
+  # Q3: actual vs forecast figure
+  actual_ts <- ts(actual_dpt, start = c(2024, 1), frequency = 4)
+  png("fig3_actual_vs_forecast.png", width = 1600, height = 650, res = fig_res)
+  plot(best_fc, include = 20, main = "Inflation: forecasts vs actual 2024-2025Q3", xlab = "", ylab = "Delta p_t", col = "steelblue4")
+  lines(q2_dpt_forecasts[["ARIMA(4,0,9)"]]$mean, col = "firebrick4", lty = 2, lwd = 2)
+  lines(q2_dpt_forecasts[["ARIMA(2,0,9)"]]$mean, col = "darkgreen", lty = 3, lwd = 2)
+  lines(actual_ts, col = "black", lwd = 2)
+  legend("topright", legend = c("ARIMA(2,0,10)", "ARIMA(4,0,9)", "ARIMA(2,0,9)", "Actual"), col = c("steelblue4", "firebrick4", "darkgreen", "black"), lty = c(1, 2, 3, 1), lwd = 2, bty = "n")
+  dev.off()
+
   png("fig4a_real_rate.png", width = fig_width, height = 500, res = fig_res)
-  plot(macro$date[-1], macro$rr[-1], type = "l", col = "steelblue4", lwd = 2, xlab = "", ylab = "percent", main = "Real interest rate proxy")
-  abline(h = mean(macro$rr[-1], na.rm = TRUE), lty = 2, col = "grey40")
+  matplot(macro$date[-1],
+          cbind(macro$dpt[-1] * 100, macro$rr[-1], macro$r[-1]),
+          type = "l", lty = 1, lwd = 2,
+          col = c("steelblue4", "black", "firebrick4"),
+          xlab = "", ylab = "Percent",
+          main = "Inflation, real interest rate and nominal interest rate")
+  legend("topleft",
+         legend = c("Inflation (100*Δp_t)", "Real rate (rr_t)", "Nominal rate (r_t)"),
+         col = c("steelblue4", "black", "firebrick4"),
+         lty = 1, lwd = 2, bty = "n")
   dev.off()
 
   png("fig4b_consumption_ratio.png", width = fig_width, height = 500, res = fig_res)
@@ -425,6 +446,7 @@ build_results <- function() {
       kpss_rt = kpss_pick(rt_ts),
       dpt_search = q2_dpt_search$info,
       rt_search = q2_rt_search$info,
+      rt_adequate = q2_rt_adequate,
       forecast_table = data.frame(
         quarter = quarter_labels,
         arima_2_10 = as.numeric(q2_dpt_forecasts[["ARIMA(2,0,10)"]]$mean),
