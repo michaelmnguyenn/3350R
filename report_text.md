@@ -44,7 +44,7 @@ In a random-walk-with-drift model, the drift parameter is exactly the average pe
 
 The two estimates are indeed very similar: for `y_t`, `δ̂ = 0.004757` versus `μ̂ = 0.004919`; for `c_t`, `δ̂ = 0.005305` versus `μ̂ = 0.005379`. The similarity suggests both approaches are capturing a consistent long-run growth pattern. The price series shows the largest gap (`δ̂ = 0.010125` versus `μ̂ = 0.009310`) because inflation was not stable across the full sample — the high-inflation 1970s and the subsequent disinflation distort a single linear trend more than they distort the average of quarterly changes.
 
-It is worth noting that close agreement between δ̂ and μ̂ is consistent with I(1) behaviour: when the trend is stochastic, the average growth rate in levels and the mean of differences should converge to the same value. This comparison alone cannot substitute for a formal unit root test, but it does provide intuitive support for treating these series as non-stationary in levels and stationary in first differences.
+It is worth noting that close agreement between δ̂ and μ̂ is expected regardless of whether the series is trend-stationary or difference-stationary: in both cases, the average growth rate in levels and the mean of differences are estimating the same underlying quantity. This comparison is therefore informative about the typical growth rate, but it cannot distinguish between I(0) with a deterministic trend and I(1) with a stochastic trend. Formal unit root testing is required for that distinction. What the close agreement does confirm is that both approaches are internally consistent, and the series are not behaving in some erratic way that would cause the two estimators to diverge.
 
 ---
 
@@ -82,14 +82,14 @@ All three interest rate models require a first difference (`d = 1`), consistent 
 
 | Quarter | ARIMA(2,0,10) | ARIMA(4,0,9) | ARIMA(2,0,9) | 68% CI Lower | 68% CI Upper | 95% CI Lower | 95% CI Upper |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| 2024Q1 | 0.008712 | 0.008681 | 0.008697 | 0.007498 | 0.009926 | 0.006194 | 0.011230 |
-| 2024Q2 | 0.008543 | 0.008498 | 0.008521 | 0.006237 | 0.010849 | 0.003908 | 0.013178 |
-| 2024Q3 | 0.008948 | 0.008906 | 0.008934 | 0.005679 | 0.012217 | 0.002389 | 0.015507 |
-| 2024Q4 | 0.008871 | 0.008835 | 0.008862 | 0.004447 | 0.013295 | 0.000021 | 0.017721 |
-| 2025Q1 | 0.008816 | 0.008791 | 0.008807 | 0.003815 | 0.013817 | −0.001019 | 0.018651 |
-| 2025Q2 | 0.008883 | 0.008861 | 0.008876 | 0.003607 | 0.014159 | −0.001688 | 0.019454 |
-| 2025Q3 | 0.008892 | 0.008873 | 0.008888 | 0.003273 | 0.014511 | −0.002347 | 0.020131 |
-| 2025Q4 | 0.008889 | 0.008874 | 0.008884 | 0.003024 | 0.014754 | −0.002841 | 0.020619 |
+| 2024Q1 | 0.008712 | 0.008681 | 0.008697 | 0.007427 | 0.009997 | 0.006194 | 0.011230 |
+| 2024Q2 | 0.008543 | 0.008498 | 0.008521 | 0.006178 | 0.010908 | 0.003908 | 0.013178 |
+| 2024Q3 | 0.008948 | 0.008906 | 0.008934 | 0.005602 | 0.012294 | 0.002389 | 0.015507 |
+| 2024Q4 | 0.008871 | 0.008835 | 0.008862 | 0.004356 | 0.013386 | 0.000021 | 0.017721 |
+| 2025Q1 | 0.008816 | 0.008791 | 0.008807 | 0.003798 | 0.013834 | −0.001019 | 0.018651 |
+| 2025Q2 | 0.008883 | 0.008861 | 0.008876 | 0.003490 | 0.014276 | −0.001688 | 0.019454 |
+| 2025Q3 | 0.008892 | 0.008873 | 0.008888 | 0.003158 | 0.014626 | −0.002347 | 0.020131 |
+| 2025Q4 | 0.008889 | 0.008874 | 0.008884 | 0.002904 | 0.014874 | −0.002841 | 0.020619 |
 
 All three models forecast quarterly inflation converging toward a long-run mean just under `0.009`. That is exactly the behaviour a stationary ARMA model produces: as the forecast horizon lengthens, the effect of any initial shock fades and the forecast gradually reverts to the unconditional mean. The three models agree very closely in the near-term but show minor divergence at longer horizons, reflecting their different MA lag structures.
 
@@ -99,7 +99,7 @@ These forecasts are valuable because monetary and fiscal policy decisions are fo
 
 There are several distinct sources of forecast uncertainty, both conceptual and quantitative.
 
-**Innovation uncertainty** is the most fundamental: future shocks cannot be predicted. This is directly visible in the widening prediction intervals. For ARIMA(2,0,10), the 68% interval spans roughly `0.0025` on each side at the 2024Q1 horizon and widens to around `0.006` by 2025Q4; the 95% interval opens from roughly `0.005` wide in 2024Q1 to over `0.023` by the end of the evaluation window. The fact that both the 68% and 95% bands expand steadily with the forecast horizon makes intuitive sense because errors compound — each additional quarter adds another layer of uncertainty. This widening makes intuitive sense because errors compound as the horizon grows.
+**Innovation uncertainty** is the most fundamental: future shocks cannot be predicted. This is directly visible in the widening prediction intervals. For ARIMA(2,0,10), the 68% interval sits roughly `0.0013` on each side of the central forecast at the 2024Q1 horizon and widens to around `0.006` by 2025Q4; the corresponding 95% interval opens from a total width of roughly `0.005` in 2024Q1 to over `0.023` by the end of the evaluation window. This steady expansion is exactly what ARIMA dynamics imply: forecast errors accumulate over time because each additional step adds a new unobserved innovation, and the propagation of uncertainty through the MA(∞) representation grows monotonically with the horizon.
 
 **Parameter uncertainty** arises because all estimated coefficients carry sampling error. Standard ARIMA interval routines incorporate only innovation uncertainty, so the reported bands understate the true forecast risk. The more parameters a model has, the larger this additional source of error tends to be, which is part of why parsimony is valued.
 
@@ -147,7 +147,7 @@ The real-rate proxy is constructed as `rr_t = r_t − 100·Δp_t`, where the sca
 
 Plotting all three series together — scaled inflation `100·Δp_t`, the real rate `rr_t`, and the nominal rate `r_t` — makes the relative stability of each immediately clear. Inflation is the most stable of the three, spending most of its history between 1 and 3 percent, with only the 1970s episode creating a wider band. The nominal rate is by far the most volatile in the long-run sense, climbing to around 15% in the early 1980s and then declining for four decades. Crucially, the real rate sits between the two: the spike in nominal rates during the Volcker disinflation was partly offset by contemporaneous high inflation, leaving the real rate in a lower — though still elevated — range. The most important takeaway from the comparison is that the dominant low-frequency swings in the nominal rate are partially but not fully neutralised by inflation, which is why real and nominal rates still move broadly together across long horizons.
 
-From the ARIMA modelling in Question 2, inflation (`d = 0`) and the interest rate framework both converge on `d = 0` for `rr_t` as well, suggesting the real rate is stationary — it fluctuates around a long-run mean, even if that mean-reversion is very slow.
+The stationarity of `rr_t` is an empirical question, not something that follows directly from the Q2 models. Formally, if `r_t` is I(1) and `100·Δp_t` is I(0), then their difference should also be I(1). However, the Fisher hypothesis offers a resolution: if the nominal rate and expected inflation share a common stochastic trend, then `rr_t = r_t − 100·Δp_t` acts as the cointegrating residual between them and is therefore I(0). The ARIMA search for `rr_t` confirms this empirically — a model with `d = 0` produces adequate residuals (LB p = 0.307 at lag 20 for ARIMA(8,0,1)), while a model with `d = 1` is not required. The real rate is therefore treated as stationary, fluctuating around a long-run positive mean even if the speed of mean-reversion is very slow.
 
 ### 4(b) Consumption Ratio
 
@@ -184,6 +184,8 @@ Key estimated coefficients:
 `ar1 = 0.6092`, `ar2 = −0.5732`, `ar3 = 0.7553`, `ma1 = −0.8316`, `ma2 = 0.6862`, `ma3 = −0.8547`, `drift = 0.0003`.
 
 The first-differencing (`d = 1`) directly captures the strong upward trend — the series is not stationary in levels. The small positive drift term (`0.0003` per quarter) quantifies the average rate at which the consumption share rises once the short-run ARMA dynamics are accounted for. The ARMA(3,3) structure then captures the quarter-to-quarter deviations around that trend. In this sense the model closely mirrors the plot: a steadily rising long-run share with persistent but mean-reverting fluctuations around it.
+
+It is worth noting explicitly that `cy_t` here is computed as the raw ratio `C_t / Y_t` (real personal consumption divided by real GDP per capita), both in chained 2017 dollar levels. This is exactly what the question requires. A ratio of two level variables that each grow over time will itself show persistent growth, which is why `d = 1` is the appropriate modelling choice — the ratio is not fluctuating around a fixed mean.
 
 ### 4(e) Policy Use
 
@@ -262,7 +264,7 @@ Estimated coefficients:
 | TWI | −0.0068 | −0.0400 | — | 0.0070 | 0.0225 | 0.9186 | 0.0547 | 8.0324 |
 | SDR | −0.0084 | — | −0.1812 | 0.0055 | 0.0182 | 0.9486 | 0.0359 | 7.7614 |
 
-The `beta1` estimates are all close to 1, confirming that volatility shocks are highly persistent — a spike in conditional variance takes a long time to decay. The positive `gamma1` estimates capture the leverage effect: negative return shocks raise conditional volatility by more than positive shocks of the same magnitude, which is a well-established stylised fact in exchange-rate data. The Student-t shape parameters around 7–8 confirm that the return distributions have heavier tails than a Normal model can accommodate.
+The `beta1` estimates are all close to 1, confirming that volatility shocks are highly persistent — a spike in conditional variance takes a long time to decay. The positive `gamma1` estimates capture an asymmetric volatility response: negative return shocks raise conditional volatility by more than positive shocks of the same magnitude. In equity markets this asymmetry is often called the "leverage effect" because falling prices raise financial leverage; in FX markets the mechanism is different — it likely reflects flight-to-safety dynamics and liquidity asymmetries — but the statistical implication is the same. The Student-t shape parameters around 7–8 confirm that the return distributions have heavier tails than a Normal model can accommodate.
 
 ### Diagnostics and Volatility Plots
 
