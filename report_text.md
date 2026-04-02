@@ -111,6 +111,8 @@ There are several distinct sources of forecast uncertainty, both conceptual and 
 
 ## Question 3
 
+**Figure 4: `fig3_actual_vs_forecast.png`**
+
 The actual quarterly inflation rates for 2024Q1–2025Q3 are computed from the provided price-level data using `Δp_t = log(P_t) − log(P_{t−1})`, with `P_{2023Q4}` taken as the last in-sample observation.
 
 | Quarter | Actual `Δp_t` | ARIMA(2,0,10) | ARIMA(4,0,9) | ARIMA(2,0,9) |
@@ -141,7 +143,7 @@ This systematic over-prediction is not a model-fitting failure — the ARIMA mod
 
 ### 4(a) Real Interest Rate
 
-**Figure 4: `fig4a_real_rate.png`** *(three-series comparison: inflation, real rate, nominal rate)*
+**Figure 5: `fig4a_real_rate.png`** *(three-series comparison: inflation, real rate, nominal rate)*
 
 The real-rate proxy is constructed as `rr_t = r_t − 100·Δp_t`, where the scaling factor of 100 converts the log-difference `Δp_t` (a decimal) into percentage points so that it is on the same scale as `r_t` (which is already in percent), producing `rr_t` in percentage points. Its sample minimum is approximately `−3.8`, its maximum around `15.0`, and its mean is roughly `3.6`.
 
@@ -151,7 +153,7 @@ The stationarity of `rr_t` is an empirical question, not something that follows 
 
 ### 4(b) Consumption Ratio
 
-**Figure 5: `fig4b_consumption_ratio.png`**
+**Figure 6: `fig4b_consumption_ratio.png`**
 
 The consumption ratio `cy_t = C_t/Y_t` rises from around `0.590` to `0.693` over the sample, with a sample mean of `0.6419`. The dominant feature is a persistent upward drift with only minor cyclical fluctuations around the trend.
 
@@ -212,7 +214,7 @@ It is worth noting that these figures summarise the unconditional dispersion ove
 
 ### 5(b) Absolute Returns
 
-**Figure 6: `fig5b_abs_returns.png`**
+**Figure 7: `fig5b_abs_returns.png`**
 
 Plotting `|e_{j,t}|` for each currency reveals clear volatility clustering: periods of large absolute returns are followed by more large returns, and calm stretches tend to persist. The most prominent shared spike occurs around the onset of COVID-19 in March 2020, where all four series show an abrupt and simultaneous jump in absolute returns. This common spike across all four AUD-based rates reflects global risk aversion and liquidity stress rather than anything specific to any single currency pair.
 
@@ -277,7 +279,7 @@ The `beta1` estimates are all close to 1, confirming that volatility shocks are 
 
 The mean equations are adequate — there is no important remaining autocorrelation in the standardised residuals. The squared standardised residuals still reject at conventional levels for all four currencies, which means the GJR-GARCH models have not completely captured every aspect of the variance dynamics. This should be stated openly rather than glossed over. Even so, the GJR-GARCH specifications are clearly a substantial improvement over constant-variance models and capture the main features of interest: volatility clustering, high persistence, asymmetric response to shocks, and heavy tails.
 
-**Figures 7–10: `fig6_vol_CNY.png`, `fig6_vol_USD.png`, `fig6_vol_TWI.png`, `fig6_vol_SDR.png`**
+**Figures 8–11: `fig6_vol_CNY.png`, `fig6_vol_USD.png`, `fig6_vol_TWI.png`, `fig6_vol_SDR.png`**
 
 All four conditional volatility series spike dramatically during the COVID-19 episode. The TWI is visibly the smoothest and most stable of the four, consistent with its lower unconditional variance from Question 5.
 
