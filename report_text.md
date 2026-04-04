@@ -50,7 +50,7 @@ It is worth noting that close agreement between δ̂ and μ̂ is expected regard
 
 ## Question 2
 
-### Model Selection Logic
+### 2(a) Model Selection
 
 For inflation, the relevant object is `Δp_t`, not the price level. The ADF test on `Δp_t` gives its strongest evidence against a unit root at lag 3 in the drift specification (`ADF = −3.2457`, `p = 0.0199`), and the KPSS statistic under the drift specification is `0.1128`, which does not reject stationarity at conventional levels. Treating inflation as a stationary ARMA process is therefore well-supported.
 
@@ -76,7 +76,7 @@ For interest rates, the top candidates from the search — ranked by AIC from th
 
 All three interest rate models require a first difference (`d = 1`), consistent with the unit-root evidence and the non-stationary visual impression from the time-series plot. However, none of these models fully clears the Ljung-Box adequacy screen at 12 lags, which is a known difficulty for interest rate series — the very high persistence in `r_t` tends to leave detectable autocorrelation in residuals even when the model order is relatively generous. Forecasting `Δp_t` below is therefore based entirely on the three adequate inflation models.
 
-### 2(a) Inflation Forecasts for 2024–2025
+### 2(b) Inflation Forecasts for 2024–2025
 
 **Figure 3: `fig2a_forecast.png`**
 
@@ -93,7 +93,7 @@ All three interest rate models require a first difference (`d = 1`), consistent 
 
 All three models forecast quarterly inflation converging toward a long-run mean just under `0.009`. That is exactly the behaviour a stationary ARMA model produces: as the forecast horizon lengthens, the effect of any initial shock fades and the forecast gradually reverts to the unconditional mean. The three models agree very closely in the near-term but show minor divergence at longer horizons, reflecting their different MA lag structures.
 
-### 2(b) Policy Use and Forecast Uncertainty
+### 2(c) Policy Use and Forecast Uncertainty
 
 These forecasts are valuable because monetary and fiscal policy decisions are forward-looking. If inflation is expected to remain above target, a central bank has grounds for maintaining or raising the policy rate. Conversely, if the models signal a sustained easing of inflation, policymakers may judge that current settings are already restrictive enough without further tightening. Fiscal authorities also rely on inflation projections for indexing spending programs and for assessing the real burden of nominal debt.
 
