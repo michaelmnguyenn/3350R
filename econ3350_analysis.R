@@ -171,6 +171,7 @@ q2_dpt_forecasts <- lapply(q2_dpt_models, function(fit) {
 q2_rt_search   <- search_arima(rt_ts, d_values = c(0, 1), p_max = 10, q_max = 10, lb_lag = 12)
 q2_rt_adequate <- q2_rt_search$info[q2_rt_search$info$lb_p > 0.05, ]
 q2_rt_adequate <- q2_rt_adequate[order(q2_rt_adequate$aic), ]
+q2_rt_fit      <- fit_exact_arima(rt_ts, c(8, 0, 5))
 
 # Q3
 
@@ -190,7 +191,7 @@ q3_eval <- do.call(rbind, lapply(names(q2_dpt_forecasts), function(nm) {
 
 q4_rr_search <- search_arima(rr_ts, d_values = c(0, 1), p_max = 10, q_max = 10, lb_lag = 20)
 q4_rr_fit    <- fit_exact_arima(rr_ts, c(8, 0, 1))
-q4_cy_search <- search_arima(cy_ts, d_values = c(0, 1), p_max = 4,  q_max = 4,  lb_lag = 20)
+q4_cy_search <- search_arima(cy_ts, d_values = c(0, 1), p_max = 6,  q_max = 6,  lb_lag = 20)
 q4_cy_fit    <- fit_exact_arima(cy_ts, c(3, 1, 3))
 
 # Q5
@@ -448,6 +449,7 @@ build_results <- function() {
       dpt_search     = q2_dpt_search$info,
       rt_search      = q2_rt_search$info,
       rt_adequate    = q2_rt_adequate,
+      rt_fit         = q2_rt_fit,
       forecast_table = data.frame(
         quarter    = quarter_labels,
         arima_2_10 = as.numeric(q2_dpt_forecasts[["ARIMA(2,0,10)"]]$mean),
@@ -500,8 +502,9 @@ saveRDS(results, "analysis_results.rds")
 save_figures()
 
 if (sys.nframe() == 0) {
-  cat("\n=== Q6 best specs ===\n");    print(q6_best_specs)
-  cat("\n=== Q6 diagnostics ===\n");   print(q6_diagnostics)
-  cat("\n=== Q7 variances ===\n");     print(q7_variances)
-  cat("\n=== Q8 probabilities ===\n"); print(q8_probabilities)
+  cat("\n=== Q2 rt adequate models ===\n"); print(head(q2_rt_adequate, 10))
+  cat("\n=== Q6 best specs ===\n");         print(q6_best_specs)
+  cat("\n=== Q6 diagnostics ===\n");        print(q6_diagnostics)
+  cat("\n=== Q7 variances ===\n");          print(q7_variances)
+  cat("\n=== Q8 probabilities ===\n");      print(q8_probabilities)
 }

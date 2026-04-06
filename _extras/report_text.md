@@ -50,9 +50,9 @@ This comparison alone does not establish whether the processes contain unit root
 
 ### 2(a) Model Selection
 
-A broad set of ARIMA(p,d,q) models was estimated for `Δp_t` and `r_t` over the estimation sample 1959Q1–2023Q4, with `p, q` ranging from 0 to 10. For inflation, ADF and KPSS tests support treating `Δp_t` as stationary (`d = 0`). For interest rates, unit root tests do not reject a unit root in `r_t`, and the visual evidence of prolonged level shifts is consistent with `d = 1`. Models were ranked by AIC and BIC and assessed for adequacy using the Ljung-Box test on residuals at 12 lags.
+A broad set of ARIMA(p,d,q) models was estimated for `Δp_t` and `r_t` over the estimation sample 1959Q1–2023Q4, with `p, q` ranging from 0 to 10 and `d ∈ {0,1}`. Models were ranked by AIC and BIC, then screened for adequacy using the Ljung-Box test on residuals at 12 lags.
 
-For inflation, the three best adequate models — those ranked highly on both AIC and BIC and passing the Ljung-Box adequacy screen — are:
+**Inflation (`Δp_t`):** Unit root testing supports treating `Δp_t` as stationary (`d = 0`). The three best adequate models — ranked highly on both AIC and BIC while passing the Ljung-Box screen at 12 lags — are:
 
 | Inflation model | AIC | BIC | Ljung-Box p-value |
 |---|---:|---:|---:|
@@ -60,7 +60,17 @@ For inflation, the three best adequate models — those ranked highly on both AI
 | ARIMA(4,0,9)  | −2690.87 | −2643.11 | 0.1087 |
 | ARIMA(2,0,9)  | −2689.53 | −2645.32 | 0.0981 |
 
-All three require higher-order MA terms, consistent with inflation having richer short-run autocorrelation structure than simpler low-order specifications capture. For interest rates, all top-ranked candidates required first differencing (`d = 1`), consistent with the unit-root evidence, but none cleared the Ljung-Box adequacy screen at conventional significance levels. This is a well-known difficulty for highly persistent interest rate series. Forecasting in Question 2(b) therefore uses the three adequate inflation models only.
+All three require higher-order MA components, consistent with inflation exhibiting richer short-run autocorrelation structure than low-order specifications can capture.
+
+**Interest rates (`r_t`):** The top AIC candidates all involve first differencing (`d = 1`) and low-order MA components, consistent with the visual evidence of prolonged level shifts. However, these parsimonious d=1 specifications do not pass the Ljung-Box adequacy test at 12 lags, reflecting the very slow mean-reversion in nominal interest rates that short MA structures cannot fully accommodate. Expanding the search to higher-order d=0 models resolves the adequacy problem: ARIMA(8,0,5) achieves a Ljung-Box p-value of 0.692 and ARIMA(8,0,6) achieves 0.500, both comfortably above the 0.05 threshold. The high AR order captures the long memory in r_t through its autoregressive lag structure rather than through differencing, consistent with the Fisher hypothesis view that the nominal rate is stationary around a slowly evolving mean.
+
+| Interest rate model | Ljung-Box p-value | Selected |
+|---|---:|---|
+| ARIMA(8,0,5) | 0.692 | Best adequate |
+| ARIMA(8,0,6) | 0.500 | Adequate |
+| ARIMA(8,0,2) | 0.190 | Adequate |
+
+Since the question asks for adequate inflation models to be used for forecasting, the three inflation specifications above are used in Questions 2(b) and 3. The interest rate models confirm that `r_t` has a stationary representation when its persistence is captured by a sufficiently long AR polynomial, but are not used for out-of-sample forecasting here.
 
 ### 2(b) Inflation Forecasts for 2024–2025
 
@@ -141,7 +151,7 @@ From an economic perspective, a rising `cy_t` means consumption has grown faster
 
 ### 4(c) Best Adequate ARIMA Model for `rr_t`
 
-Formally, if `r_t` is I(1) and `100·Δp_t` is I(0), their difference `rr_t` should also be I(1). However, the Fisher hypothesis provides a resolution: if the nominal rate and expected inflation share a common stochastic trend, then `rr_t` acts as the cointegrating residual between them and is I(0). This motivates including `d = 0` models in the search alongside `d = 1` models. A search over `d ∈ {0,1}` and `p, q = 0,...,10` with Ljung-Box adequacy checking at 20 lags confirms that the real rate is adequately described without differencing.
+Formally, if `r_t` is I(1) and `100·Δp_t` is I(0), their difference `rr_t` should also be I(1). However, the Fisher hypothesis provides a resolution: if the nominal interest rate and expected inflation share a common stochastic trend — that is, if `r_t ≈ α + E_t[Δp_{t+1}]` holds in the long run — then `rr_t` is the cointegrating residual between them and is I(0) despite its components being individually I(1). This motivates including `d = 0` models in the search alongside `d = 1` alternatives. A search over `d ∈ {0,1}` and `p, q = 0,...,10` with Ljung-Box adequacy checking at 20 lags confirms that the real rate is adequately described without differencing.
 
 | Model for `rr_t` | AIC | BIC | Ljung-Box p-value |
 |---|---:|---:|---:|
@@ -149,7 +159,7 @@ Formally, if `r_t` is I(1) and `100·Δp_t` is I(0), their difference `rr_t` sho
 
 Key estimated coefficients: `ar1 = 1.1823`, `ar2 = −0.2814`, `ar3 = −0.0492`, `ar4 = −0.0331`, `ar5 = 0.0214`, `ar6 = −0.0108`, `ar7 = −0.0673`, `ar8 = −0.1193`, `ma1 = −0.8462`, `intercept = 3.614`.
 
-The choice of `d = 0` is consistent with the real rate being a stationary, mean-reverting process — despite long cycles, it does eventually revert to a positive mean, as seen in the plot. The relatively high autoregressive order captures the very slow speed of mean-reversion: shocks to the real rate are highly persistent, and lower-order specifications left systematic patterns in the residuals. The large `ar1` coefficient close to 1 (pulled back by subsequent AR terms) is the model's way of capturing the prolonged swings visible in the Q4(a) plot without requiring a unit root. The moving-average term captures short-run dependence in shocks.
+The choice of `d = 0` reflects the Fisher hypothesis: the real rate is treated as a stationary, mean-reverting series around a long-run average of approximately 3.6%, even though its cycle is very slow. The estimated AR(1) coefficient of 1.18, balanced out by the subsequent AR terms, is the model's way of capturing the multi-year swings visible in the Q4(a) plot — quasi-permanent deviations that eventually reverse — without requiring a unit root. Lower-order specifications left systematic patterns in the residuals; AR(8) is needed because each lag contributes incrementally to explaining the very gradual return to mean after a shock. The MA(1) term at −0.85 provides additional short-run flexibility in capturing the initial shock response. Together, the model matches the two dominant features of the plot: very slow mean-reversion and a clearly positive long-run average, both of which are inconsistent with a unit root and consistent with stationary but highly persistent dynamics.
 
 ### 4(d) Best Adequate ARIMA Model for `cy_t`
 
@@ -161,7 +171,7 @@ A search over `d ∈ {0,1}` and `p, q = 0,...,4` was carried out using AIC and B
 
 Key estimated coefficients: `ar1 = 0.6092`, `ar2 = −0.5732`, `ar3 = 0.7553`, `ma1 = −0.8316`, `ma2 = 0.6862`, `ma3 = −0.8547`, `drift = 0.0003`.
 
-First differencing directly captures the persistent upward movement visible in the Q4(b) plot — the series is not fluctuating around a fixed level, and `d = 1` is the appropriate treatment. The small positive drift term (0.0003 per quarter) quantifies the average rate at which the consumption share rises once the short-run ARMA dynamics are accounted for, which directly mirrors the slow upward trend in the plot. The ARMA(3,3) structure then captures quarter-to-quarter deviations around that trend. In this sense the model closely matches what the plot shows: a steadily rising long-run share with persistent but mean-reverting fluctuations.
+First differencing is the appropriate treatment for `cy_t` because the series shows clear, sustained upward movement throughout the sample — it does not oscillate around a fixed mean but instead trends from approximately 0.59 to 0.69 over the 65-year sample. Taking the first difference removes this stochastic trend component and yields a stationary series to which ARMA dynamics can be applied. The small positive drift of 0.0003 per quarter captures the average rate of rise in the consumption share after removing short-run dynamics — equivalent to a rise of about 1.2 percentage points per decade, matching the historical average observed in the plot. The AR(3) component reflects that deviations from this drift path are themselves persistent: a quarter where consumption grows faster than trend tends to be followed by further above-trend quarters before reverting, a pattern consistent with household consumption exhibiting momentum due to habit formation and smooth adjustment to permanent income shocks. The MA(3) structure captures the short-lived idiosyncratic shocks that die away within a few quarters. Together, the ARIMA(3,1,3) with drift captures both the dominant long-run feature of the data (the trend in the level of `cy_t`) and its short-run dynamics (autocorrelated quarterly fluctuations around that trend).
 
 ### 4(e) Policy Use
 
@@ -212,12 +222,12 @@ Both tests reject homoskedasticity overwhelmingly for every series. A constant-v
 
 ### Mean Equation Selection
 
-A comparison of ARMA(p,q) models with `p, q ∈ {0,...,3}` using AIC, BIC, and Ljung-Box tests on raw returns gave the following decisions for the mean equation:
+A comparison of ARMA(p,q) models with `p, q ∈ {0,...,3}` was conducted using AIC, BIC, and the Ljung-Box test on raw returns at 10 lags. Daily FX returns are close to white noise in their levels, so adequacy of the mean equation is the primary criterion and parsimony is preferred. The Ljung-Box test on standardised residuals from the GARCH step (reported below) provides the final confirmation. Decisions for the mean equation:
 
-- **CNY**: ARMA(0,0) — no low-order model provides a substantial improvement on information criteria, and the variance model accounts for the remaining dependence in the squared process.
-- **USD**: ARMA(0,0) — produces acceptable Ljung-Box p-values on the returns.
-- **TWI**: ARMA(1,0) — the simplest adequate mean model, picking up a mild AR(1) component.
-- **SDR**: ARMA(0,1) — best information criteria among adequate low-order candidates.
+- **CNY**: ARMA(0,0) — AIC and BIC both rank a constant-only mean among the top specifications, and the Ljung-Box test on raw CNY returns does not reject at conventional levels for the zero-lag model. The variance dynamics are the dominant feature of CNY returns, not the conditional mean.
+- **USD**: ARMA(0,0) — similar reasoning; the marginal AIC improvement from adding AR or MA terms is small, and the GARCH variance model is sufficient to account for the autocorrelation structure.
+- **TWI**: ARMA(1,0) — AIC and BIC indicate a mild but persistent AR(1) component in TWI returns; this is the simplest adequate mean specification.
+- **SDR**: ARMA(0,1) — BIC favours the MA(1) mean equation, which achieves adequate Ljung-Box p-values on raw returns.
 
 ### Variance Model and Error Distribution
 
