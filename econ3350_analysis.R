@@ -312,10 +312,11 @@ q6_diagnostics <- do.call(rbind, lapply(names(q6_final_fits), function(name) {
 garch_unconditional_variance <- function(fit) {
   cf        <- coef(fit)
   has_gamma <- "gamma1" %in% names(cf)
+  b2        <- if ("beta2" %in% names(cf)) unname(cf["beta2"]) else 0
   persistence <- if (has_gamma) {
-    unname(cf["alpha1"] + cf["beta1"] + 0.5 * cf["gamma1"])
+    unname(cf["alpha1"] + cf["beta1"] + b2 + 0.5 * cf["gamma1"])
   } else {
-    unname(cf["alpha1"] + cf["beta1"])
+    unname(cf["alpha1"] + cf["beta1"] + b2)
   }
   list(
     persistence    = persistence,

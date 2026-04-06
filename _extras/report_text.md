@@ -62,15 +62,15 @@ A broad set of ARIMA(p,d,q) models was estimated for `Δp_t` and `r_t` over the 
 
 All three require higher-order MA components, consistent with inflation exhibiting richer short-run autocorrelation structure than low-order specifications can capture.
 
-**Interest rates (`r_t`):** The top AIC candidates all involve first differencing (`d = 1`) and low-order MA components, consistent with the visual evidence of prolonged level shifts. However, these parsimonious d=1 specifications do not pass the Ljung-Box adequacy test at 12 lags, reflecting the very slow mean-reversion in nominal interest rates that short MA structures cannot fully accommodate. Expanding the search to higher-order d=0 models resolves the adequacy problem: ARIMA(8,0,5) achieves a Ljung-Box p-value of 0.692 and ARIMA(8,0,6) achieves 0.500, both comfortably above the 0.05 threshold. The high AR order captures the long memory in r_t through its autoregressive lag structure rather than through differencing, consistent with the Fisher hypothesis view that the nominal rate is stationary around a slowly evolving mean.
+**Interest rates (`r_t`):** The top AIC candidates all involve first differencing (`d = 1`) combined with high-order AR components, consistent with the visual evidence of prolonged level shifts and very slow mean-reversion in once-differenced rates. The leading adequate models — ARIMA(8,1,2), ARIMA(7,1,2), and ARIMA(8,1,1) — all pass the Ljung-Box adequacy test at 12 lags, with p-values between 0.14 and 0.19. The high AR order is required to capture the substantial autocorrelation remaining in `Δr_t`.
 
-| Interest rate model | Ljung-Box p-value | Selected |
-|---|---:|---|
-| ARIMA(8,0,5) | 0.692 | Best adequate |
-| ARIMA(8,0,6) | 0.500 | Adequate |
-| ARIMA(8,0,2) | 0.190 | Adequate |
+| Interest rate model | AIC | BIC | Ljung-Box p-value | Selected |
+|---|---:|---:|---:|---|
+| ARIMA(8,1,2) | 475.76 | 518.44 | 0.145 | Best adequate |
+| ARIMA(7,1,2) | 476.69 | 515.81 | 0.189 | Adequate |
+| ARIMA(8,1,1) | 476.92 | 516.04 | 0.164 | Adequate |
 
-Since the question asks for adequate inflation models to be used for forecasting, the three inflation specifications above are used in Questions 2(b) and 3. The interest rate models confirm that `r_t` has a stationary representation when its persistence is captured by a sufficiently long AR polynomial, but are not used for out-of-sample forecasting here.
+Since the question asks for adequate inflation models to be used for forecasting, the three inflation specifications above are used in Questions 2(b) and 3. The interest rate models confirm that `r_t` is I(1), with its slow mean-reversion captured by a high AR order in the differenced specification; these models are not used for out-of-sample forecasting here.
 
 ### 2(b) Inflation Forecasts for 2024–2025
 
@@ -231,34 +231,34 @@ A comparison of ARMA(p,q) models with `p, q ∈ {0,...,3}` was conducted using A
 
 ### Variance Model and Error Distribution
 
-For each chosen mean equation, symmetric GARCH(1,1), asymmetric GJR-GARCH(1,1), and both GARCH(1,2) variants were compared under Normal and Student-t errors — eight candidate specifications per currency. Models were selected by requiring adequacy on the Ljung-Box test for both standardised residuals (mean adequacy) and squared standardised residuals (variance adequacy), then minimising AIC among adequate candidates. The GJR-GARCH specification with Student-t errors produced the lowest AIC for all four currencies:
+For each chosen mean equation, symmetric GARCH(1,1), asymmetric GJR-GARCH(1,1), and both GARCH(1,2) variants were compared under Normal and Student-t errors — eight candidate specifications per currency. Models were selected by requiring adequacy on the Ljung-Box test for both standardised residuals (mean adequacy) and squared standardised residuals (variance adequacy), then minimising AIC among adequate candidates. The GJR-GARCH(1,2) specification with Student-t errors produced the lowest AIC for all four currencies:
 
 | Currency | Mean Model | Variance Model | Errors | AIC | BIC |
 |---|---|---|---|---:|---:|
-| CNY | ARMA(0,0) | GJR-GARCH(1,1) | Student-t | 1.5243 | 1.5410 |
-| USD | ARMA(0,0) | GJR-GARCH(1,1) | Student-t | 1.7963 | 1.8130 |
-| TWI | ARMA(1,0) | GJR-GARCH(1,1) | Student-t | 1.2830 | 1.3024 |
-| SDR | ARMA(0,1) | GJR-GARCH(1,1) | Student-t | 1.7938 | 1.8132 |
+| CNY | ARMA(0,0) | GJR-GARCH(1,2) | Student-t | 1.5236 | 1.5431 |
+| USD | ARMA(0,0) | GJR-GARCH(1,2) | Student-t | 1.7948 | 1.8143 |
+| TWI | ARMA(1,0) | GJR-GARCH(1,2) | Student-t | 1.2806 | 1.3028 |
+| SDR | ARMA(0,1) | GJR-GARCH(1,2) | Student-t | 1.7901 | 1.8124 |
 
 Estimated coefficients:
 
-| Currency | `mu` | `ar1` | `ma1` | `omega` | `alpha1` | `beta1` | `gamma1` | `shape` |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| CNY | −0.0143 | — | — | 0.0067 | 0.0143 | 0.9316 | 0.0623 | 8.0011 |
-| USD | −0.0140 | — | — | 0.0042 | 0.0013 | 0.9607 | 0.0519 | 8.4778 |
-| TWI | −0.0068 | −0.0400 | — | 0.0070 | 0.0225 | 0.9186 | 0.0547 | 8.0324 |
-| SDR | −0.0084 | — | −0.1812 | 0.0055 | 0.0182 | 0.9486 | 0.0359 | 7.7614 |
+| Currency | `mu` | `ar1` | `ma1` | `omega` | `alpha1` | `beta1` | `beta2` | `gamma1` | `shape` |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| CNY | −0.0145 | — | — | 0.0105 | 0.0256 | 0.3652 | 0.5282 | 0.0898 | 8.2296 |
+| USD | −0.0149 | — | — | 0.0074 | 0.0062 | 0.2176 | 0.7123 | 0.0849 | 8.8065 |
+| TWI | −0.0071 | −0.0382 | — | 0.0112 | 0.0356 | 0.2603 | 0.6087 | 0.0893 | 8.3771 |
+| SDR | −0.0095 | — | −0.1787 | 0.0101 | 0.0348 | 0.1801 | 0.7255 | 0.0635 | 8.0817 |
 
-The `beta1` estimates are all close to 1, confirming highly persistent volatility shocks — a spike in conditional variance takes a long time to decay. The positive `gamma1` estimates capture an asymmetric response: negative return shocks raise conditional volatility by more than positive shocks of the same magnitude. In FX markets this likely reflects flight-to-safety dynamics and liquidity asymmetries during stress periods. The Student-t shape parameters around 7–8 confirm heavier tails than a Normal model can accommodate.
+The GJR-GARCH(1,2) specification distributes GARCH persistence across two lags; the combined `beta1 + beta2` ranges from 0.89 to 0.93 across currencies, confirming highly persistent volatility shocks — a spike in conditional variance takes a long time to decay. The positive `gamma1` estimates capture an asymmetric response: negative return shocks raise conditional volatility by more than positive shocks of the same magnitude. In FX markets this likely reflects flight-to-safety dynamics and liquidity asymmetries during stress periods. The Student-t shape parameters around 8–9 confirm heavier tails than a Normal model can accommodate.
 
 ### Diagnostics and Volatility Plots
 
 | Currency | LB on Std. Residuals p-value | LB on Sq. Std. Residuals p-value |
 |---|---:|---:|
-| CNY | 0.4394 | 0.0000 |
-| USD | 0.6937 | 0.0000 |
-| TWI | 0.5976 | 0.0000 |
-| SDR | 0.8967 | 0.0000 |
+| CNY | 0.4666 | 0.0000 |
+| USD | 0.7275 | 0.0000 |
+| TWI | 0.6180 | 0.0000 |
+| SDR | 0.9088 | 0.0000 |
 
 The mean equations are adequate — no important autocorrelation remains in the standardised residuals. The squared standardised residuals still reject at conventional levels for all four currencies, indicating that the GJR-GARCH(1,1) specification does not capture every aspect of the variance dynamics. Despite this, the selected models represent a substantial improvement over constant-variance alternatives and capture the main features of interest: volatility clustering, high persistence, asymmetric shock response, and heavy tails.
 
@@ -269,22 +269,22 @@ All four conditional volatility series spike sharply during the COVID-19 episode
 ---
 ## Question 7
 
-For a GJR-GARCH(1,1) model the unconditional variance exists when `α + β + γ/2 < 1`, and is given by:
+For a GJR-GARCH(1,2) model the unconditional variance exists when `α + β₁ + β₂ + γ/2 < 1`, and is given by:
 
-`σ²_j = ω / (1 − α − β − γ/2)`
+`σ²_j = ω / (1 − α − β₁ − β₂ − γ/2)`
 
 Applying this to each fitted model:
 
-| Currency | `α + β + γ/2` | Model Variance (σ̂²) | Sample Variance | Ratio |
+| Currency | `α + β₁ + β₂ + γ/2` | Model Variance (σ̂²) | Sample Variance | Ratio |
 |---|---:|---:|---:|---:|
-| CNY | 0.9771 | 0.2925 | 0.3369 | 0.8682 |
-| USD | 0.9879 | 0.3456 | 0.4381 | 0.7888 |
-| TWI | 0.9685 | 0.2234 | 0.2675 | 0.8352 |
-| SDR | 0.9848 | 0.3638 | 0.4492 | 0.8099 |
+| CNY | 0.9638 | 0.2899 | 0.3369 | 0.8607 |
+| USD | 0.9785 | 0.3456 | 0.4381 | 0.7889 |
+| TWI | 0.9493 | 0.2218 | 0.2675 | 0.8293 |
+| SDR | 0.9722 | 0.3630 | 0.4492 | 0.8081 |
 
-All four persistence measures are below 1, so finite unconditional variances exist for every currency. The persistence values are all high, particularly for USD and SDR, indicating that volatility shocks decay only gradually — consistent with the clustering patterns in the absolute return plots.
+All four persistence measures are below 1, so finite unconditional variances exist for every currency. The persistence values are all high — ranging from 0.9493 for TWI to 0.9785 for USD — indicating that volatility shocks decay only gradually, consistent with the clustering patterns in the absolute return plots.
 
-The model-implied variances are uniformly lower than the corresponding sample variances, with ratios ranging from about 0.79 to 0.87. The raw sample variance is mechanically inflated by the large but transitory volatility spike during COVID-19 in March 2020. The GJR-GARCH model separates that temporary burst from the structural long-run variance level, so the model-based estimates are arguably more representative of the underlying volatility of each exchange rate under normal market conditions. The same broad ranking from Question 5 is preserved: TWI remains the lowest-volatility series and SDR the highest.
+The model-implied variances are uniformly lower than the corresponding sample variances, with ratios ranging from about 0.79 to 0.86. The raw sample variance is mechanically inflated by the large but transitory volatility spike during COVID-19 in March 2020. The GJR-GARCH model separates that temporary burst from the structural long-run variance level, so the model-based estimates are arguably more representative of the underlying volatility of each exchange rate under normal market conditions. The same broad ranking from Question 5 is preserved: TWI remains the lowest-volatility series and SDR the highest.
 
 ---
 
@@ -294,13 +294,13 @@ The probability that the daily return falls below 0.01% on 13/01/2026 and 14/01/
 
 | Currency | `μ_{T+1}` | `σ_{T+1}` | P(e < 0.01), 13 Jan | `μ_{T+2}` | `σ_{T+2}` | P(e < 0.01), 14 Jan |
 |---|---:|---:|---:|---:|---:|---:|
-| CNY | −0.0143 | 0.4524 | 0.5239 | −0.0143 | 0.4547 | 0.5238 |
-| USD | −0.0140 | 0.4432 | 0.5240 | −0.0140 | 0.4453 | 0.5239 |
-| TWI | −0.0070 | 0.3775 | 0.5201 | −0.0067 | 0.3809 | 0.5196 |
-| SDR | −0.0230 | 0.4449 | 0.5332 | −0.0084 | 0.4477 | 0.5184 |
+| CNY | −0.0145 | 0.4575 | 0.5239 | −0.0145 | 0.4533 | 0.5241 |
+| USD | −0.0149 | 0.4562 | 0.5240 | −0.0149 | 0.4404 | 0.5249 |
+| TWI | −0.0074 | 0.3830 | 0.5202 | −0.0071 | 0.3777 | 0.5201 |
+| SDR | −0.0242 | 0.4522 | 0.5337 | −0.0095 | 0.4444 | 0.5196 |
 
 All probabilities are slightly above 0.5. This occurs because the forecast conditional means are negative for all four series while the threshold 0.01% is close to zero, so on both dates there is a somewhat greater than 50% chance that the return falls below the threshold.
 
-A lower probability is preferable from a downside-risk perspective, since it means a smaller chance of earning less than the 0.01% threshold. On **13 January 2026**, the ranking from least to most downside risk is TWI (0.5201), CNY (0.5239), USD (0.5240), SDR (0.5332). On **14 January 2026**, the ranking shifts to SDR (0.5184), TWI (0.5196), CNY (0.5238), USD (0.5239).
+A lower probability is preferable from a downside-risk perspective, since it means a smaller chance of earning less than the 0.01% threshold. On **13 January 2026**, the ranking from least to most downside risk is TWI (0.5202), CNY (0.5239), USD (0.5240), SDR (0.5337). On **14 January 2026**, the ranking shifts to SDR (0.5196), TWI (0.5201), CNY (0.5241), USD (0.5249).
 
-TWI is the most consistently attractive currency across both dates, sitting near the bottom of the risk ranking on both days. The main reason is that TWI combines the least negative forecast mean with the lowest conditional volatility — around 0.38 versus 0.44–0.45 for the other three — which reflects the diversification benefit of a trade-weighted basket. SDR's large jump in rank between the two days reflects its notably lower mean return on 13 January (μ_{T+1} = −0.0230 versus around −0.014 for the others), which pushes substantially more of the distribution below the threshold, before it reverts toward values similar to the other currencies on 14 January. This kind of day-to-day shift in relative ranking illustrates why a static approach using unconditional sample variances from Question 5 is insufficient for short-horizon risk management. The GARCH framework produces forward-looking probabilities conditioned on the current volatility state, allowing a more accurate and timely assessment of downside risk across currencies.
+TWI is the most consistently attractive currency across both dates, sitting near the bottom of the risk ranking on both days. The main reason is that TWI combines the least negative forecast mean with the lowest conditional volatility — around 0.38 versus 0.44–0.46 for the other three — which reflects the diversification benefit of a trade-weighted basket. SDR's large jump in rank between the two days reflects its notably lower mean return on 13 January (μ_{T+1} = −0.0242 versus around −0.007 to −0.015 for the others), which pushes substantially more of the distribution below the threshold, before it reverts toward values similar to the other currencies on 14 January. This kind of day-to-day shift in relative ranking illustrates why a static approach using unconditional sample variances from Question 5 is insufficient for short-horizon risk management. The GARCH framework produces forward-looking probabilities conditioned on the current volatility state, allowing a more accurate and timely assessment of downside risk across currencies.
