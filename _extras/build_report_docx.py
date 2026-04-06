@@ -1,4 +1,5 @@
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
 from docx import Document
@@ -133,6 +134,13 @@ def build_docx() -> None:
 
         document.add_paragraph(clean_inline(line))
         i += 1
+
+    now = datetime.now(timezone.utc)
+    cp = document.core_properties
+    cp.author = "Michael Nguyen"
+    cp.last_modified_by = "Michael Nguyen"
+    cp.created = now
+    cp.modified = now
 
     document.save(str(OUTPUT_PATH))
 
