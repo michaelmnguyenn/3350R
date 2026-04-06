@@ -160,9 +160,9 @@ q1_means <- c(
 
 q2_dpt_search <- search_arima(dpt_ts, d_values = 0,        p_max = 10, q_max = 10, lb_lag = 12)
 q2_dpt_models <- list(
-  "ARIMA(2,0,10)" = fit_exact_arima(dpt_ts, c(2, 0, 10)),
-  "ARIMA(4,0,9)"  = fit_exact_arima(dpt_ts, c(4, 0, 9)),
-  "ARIMA(2,0,9)"  = fit_exact_arima(dpt_ts, c(2, 0, 9))
+  "ARIMA(3,0,3)" = fit_exact_arima(dpt_ts, c(3, 0, 3)),
+  "ARIMA(1,0,6)"  = fit_exact_arima(dpt_ts, c(1, 0, 6)),
+  "ARIMA(5,0,3)"  = fit_exact_arima(dpt_ts, c(5, 0, 3))
 )
 q2_dpt_forecasts <- lapply(q2_dpt_models, function(fit) {
   forecast::forecast(fit, h = 8, level = c(68, 95))
@@ -171,7 +171,7 @@ q2_dpt_forecasts <- lapply(q2_dpt_models, function(fit) {
 q2_rt_search   <- search_arima(rt_ts, d_values = c(0, 1), p_max = 10, q_max = 10, lb_lag = 12)
 q2_rt_adequate <- q2_rt_search$info[q2_rt_search$info$lb_p > 0.05, ]
 q2_rt_adequate <- q2_rt_adequate[order(q2_rt_adequate$aic), ]
-q2_rt_fit      <- fit_exact_arima(rt_ts, c(8, 0, 5))
+q2_rt_fit      <- fit_exact_arima(rt_ts, c(8, 1, 2))
 
 # Q3
 
@@ -379,22 +379,22 @@ save_figures <- function() {
   plot(macro$date,     macro$r,       type = "l", col = "black",      lwd = 2, xlab = "", ylab = "percent",  main = "r_t")
   dev.off()
 
-  best_fc <- q2_dpt_forecasts[["ARIMA(2,0,10)"]]
+  best_fc <- q2_dpt_forecasts[["ARIMA(3,0,3)"]]
   png("fig2a_forecast.png", width = 1600, height = 650, res = fig_res)
   plot(best_fc, include = 20, main = "Inflation forecasts 2024-2025", xlab = "", ylab = "Delta p_t", col = "steelblue4")
-  lines(q2_dpt_forecasts[["ARIMA(4,0,9)"]]$mean, col = "firebrick4", lty = 2, lwd = 2)
-  lines(q2_dpt_forecasts[["ARIMA(2,0,9)"]]$mean, col = "darkgreen",  lty = 3, lwd = 2)
-  legend("topleft", legend = c("ARIMA(2,0,10)", "ARIMA(4,0,9)", "ARIMA(2,0,9)"),
+  lines(q2_dpt_forecasts[["ARIMA(1,0,6)"]]$mean, col = "firebrick4", lty = 2, lwd = 2)
+  lines(q2_dpt_forecasts[["ARIMA(5,0,3)"]]$mean, col = "darkgreen",  lty = 3, lwd = 2)
+  legend("topleft", legend = c("ARIMA(3,0,3)", "ARIMA(1,0,6)", "ARIMA(5,0,3)"),
          col = c("steelblue4", "firebrick4", "darkgreen"), lty = 1:3, lwd = 2, bty = "n")
   dev.off()
 
   actual_ts <- ts(actual_dpt, start = c(2024, 1), frequency = 4)
   png("fig3_actual_vs_forecast.png", width = 1600, height = 650, res = fig_res)
   plot(best_fc, include = 20, main = "Inflation: forecasts vs actual 2024-2025Q3", xlab = "", ylab = "Delta p_t", col = "steelblue4")
-  lines(q2_dpt_forecasts[["ARIMA(4,0,9)"]]$mean, col = "firebrick4", lty = 2, lwd = 2)
-  lines(q2_dpt_forecasts[["ARIMA(2,0,9)"]]$mean, col = "darkgreen",  lty = 3, lwd = 2)
+  lines(q2_dpt_forecasts[["ARIMA(1,0,6)"]]$mean, col = "firebrick4", lty = 2, lwd = 2)
+  lines(q2_dpt_forecasts[["ARIMA(5,0,3)"]]$mean, col = "darkgreen",  lty = 3, lwd = 2)
   lines(actual_ts, col = "black", lwd = 2)
-  legend("topright", legend = c("ARIMA(2,0,10)", "ARIMA(4,0,9)", "ARIMA(2,0,9)", "Actual"),
+  legend("topright", legend = c("ARIMA(3,0,3)", "ARIMA(1,0,6)", "ARIMA(5,0,3)", "Actual"),
          col = c("steelblue4", "firebrick4", "darkgreen", "black"),
          lty = c(1, 2, 3, 1), lwd = 2, bty = "n")
   dev.off()
@@ -453,22 +453,22 @@ build_results <- function() {
       rt_fit         = q2_rt_fit,
       forecast_table = data.frame(
         quarter    = quarter_labels,
-        arima_2_10 = as.numeric(q2_dpt_forecasts[["ARIMA(2,0,10)"]]$mean),
-        arima_4_9  = as.numeric(q2_dpt_forecasts[["ARIMA(4,0,9)"]]$mean),
-        arima_2_9  = as.numeric(q2_dpt_forecasts[["ARIMA(2,0,9)"]]$mean),
-        lo68 = as.numeric(q2_dpt_forecasts[["ARIMA(2,0,10)"]]$lower[, 1]),
-        hi68 = as.numeric(q2_dpt_forecasts[["ARIMA(2,0,10)"]]$upper[, 1]),
-        lo95 = as.numeric(q2_dpt_forecasts[["ARIMA(2,0,10)"]]$lower[, 2]),
-        hi95 = as.numeric(q2_dpt_forecasts[["ARIMA(2,0,10)"]]$upper[, 2])
+        arima_3_3 = as.numeric(q2_dpt_forecasts[["ARIMA(3,0,3)"]]$mean),
+        arima_1_6  = as.numeric(q2_dpt_forecasts[["ARIMA(1,0,6)"]]$mean),
+        arima_5_3  = as.numeric(q2_dpt_forecasts[["ARIMA(5,0,3)"]]$mean),
+        lo68 = as.numeric(q2_dpt_forecasts[["ARIMA(3,0,3)"]]$lower[, 1]),
+        hi68 = as.numeric(q2_dpt_forecasts[["ARIMA(3,0,3)"]]$upper[, 1]),
+        lo95 = as.numeric(q2_dpt_forecasts[["ARIMA(3,0,3)"]]$lower[, 2]),
+        hi95 = as.numeric(q2_dpt_forecasts[["ARIMA(3,0,3)"]]$upper[, 2])
       )
     ),
     q3 = list(
       actual_table = data.frame(
         quarter    = eval_quarters,
         actual     = actual_dpt,
-        arima_2_10 = as.numeric(q2_dpt_forecasts[["ARIMA(2,0,10)"]]$mean[1:7]),
-        arima_4_9  = as.numeric(q2_dpt_forecasts[["ARIMA(4,0,9)"]]$mean[1:7]),
-        arima_2_9  = as.numeric(q2_dpt_forecasts[["ARIMA(2,0,9)"]]$mean[1:7])
+        arima_3_3 = as.numeric(q2_dpt_forecasts[["ARIMA(3,0,3)"]]$mean[1:7]),
+        arima_1_6  = as.numeric(q2_dpt_forecasts[["ARIMA(1,0,6)"]]$mean[1:7]),
+        arima_5_3  = as.numeric(q2_dpt_forecasts[["ARIMA(5,0,3)"]]$mean[1:7])
       ),
       metrics = q3_eval
     ),

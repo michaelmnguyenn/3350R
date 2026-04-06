@@ -22,9 +22,9 @@ The nominal interest rate `r_t` is plotted in levels alongside the differenced s
 
 | Series | Intercept | Trend (δ̂) | SE(Trend) | R² |
 |---|---:|---:|---:|---:|
-| `p_t` | 0.270678 | 0.010125 | 0.000147 | 0.9487 |
-| `y_t` | 9.945124 | 0.004757 | 0.000042 | 0.9799 |
-| `c_t` | 9.428678 | 0.005305 | 0.000043 | 0.9834 |
+| `p_t` | 0.282660 | 0.009989 | 0.000142 | 0.9492 |
+| `y_t` | 9.947819 | 0.004724 | 0.000041 | 0.9806 |
+| `c_t` | 9.431917 | 0.005272 | 0.000041 | 0.9840 |
 
 All three trend slope estimates are statistically significant with very small standard errors, and the high R² values confirm that a linear time trend accounts for most of the long-run variation in each log-level series.
 
@@ -32,15 +32,15 @@ All three trend slope estimates are statistically significant with very small st
 
 | Series | Mean (μ̂) |
 |---|---:|
-| `Δp_t` | 0.009310 |
-| `Δy_t` | 0.004919 |
-| `Δc_t` | 0.005379 |
+| `Δp_t` | 0.009254 |
+| `Δy_t` | 0.004902 |
+| `Δc_t` | 0.005375 |
 
 ### 1(b)(iii) Rationale and Comparison
 
 A rationale for these estimations is that they help characterise the trend behaviour of the processes. A persistent increase in the data suggests a trend in the underlying stochastic process, and modelling this in practice involves including time `t` as a regressor. Regressing `p_t`, `y_t`, and `c_t` on an intercept and time trend provides an estimate of the linear trend in the process mean, captured by δ̂. By contrast, estimating the mean of `Δp_t`, `Δy_t`, and `Δc_t` provides an estimate of the average quarter-to-quarter change in each series, captured by μ̂. If the log-level processes are trending and are reasonably close to difference-stationary behaviour, then the mean of the first differences should be similar to the slope of the linear trend in levels. So δ̂ and μ̂ are both trying to capture average growth, but through slightly different routes — δ̂ through a fitted linear trend in the level series, and μ̂ through the average change in the differenced series.
 
-In this sample the estimates are quite close. For `y_t`, the estimated trend is 0.004757 while the mean of `Δy_t` is 0.004919; for `c_t`, 0.005305 versus 0.005379. The gap is slightly larger for `p_t` (0.010125 versus 0.009310), which is consistent with the plot showing somewhat less smooth trend behaviour — the high-inflation 1970s and subsequent disinflation distort a single linear trend more than they distort the average of quarterly changes.
+In this sample the estimates are quite close. For `y_t`, the estimated trend is 0.004724 while the mean of `Δy_t` is 0.004902; for `c_t`, 0.005272 versus 0.005375. The gap is slightly larger for `p_t` (0.009989 versus 0.009254), which is consistent with the plot showing somewhat less smooth trend behaviour — the high-inflation 1970s and subsequent disinflation distort a single linear trend more than they distort the average of quarterly changes.
 
 This comparison alone does not establish whether the processes contain unit roots; that requires formal unit root testing.
 
@@ -52,15 +52,15 @@ This comparison alone does not establish whether the processes contain unit root
 
 A broad set of ARIMA(p,d,q) models was estimated for `Δp_t` and `r_t` over the estimation sample 1959Q1–2023Q4, with `p, q` ranging from 0 to 10 and `d ∈ {0,1}`. Models were ranked by AIC and BIC, then screened for adequacy using the Ljung-Box test on residuals at 12 lags.
 
-**Inflation (`Δp_t`):** Unit root testing supports treating `Δp_t` as stationary (`d = 0`). The three best adequate models — ranked highly on both AIC and BIC while passing the Ljung-Box screen at 12 lags — are:
+**Inflation (`Δp_t`):** Unit root testing supports treating `Δp_t` as stationary (`d = 0`). The three best adequate models — ranked by AIC while passing the Ljung-Box screen at 12 lags — are:
 
 | Inflation model | AIC | BIC | Ljung-Box p-value |
 |---|---:|---:|---:|
-| ARIMA(2,0,10) | −2692.14 | −2644.38 | 0.1243 |
-| ARIMA(4,0,9)  | −2690.87 | −2643.11 | 0.1087 |
-| ARIMA(2,0,9)  | −2689.53 | −2645.32 | 0.0981 |
+| ARIMA(3,0,3) | −2686.38 | −2657.92 | 0.1010 |
+| ARIMA(1,0,6) | −2685.30 | −2653.28 | 0.1150 |
+| ARIMA(5,0,3) | −2685.17 | −2649.60 | 0.1223 |
 
-All three require higher-order MA components, consistent with inflation exhibiting richer short-run autocorrelation structure than low-order specifications can capture.
+All three models include both AR and MA components, reflecting the mixed short-run autocorrelation dynamics of quarterly inflation. ARIMA(3,0,3) achieves the best AIC and BIC and is used as the primary benchmark for interval construction; ARIMA(1,0,6) trades parsimonious AR structure for a richer MA lag polynomial; ARIMA(5,0,3) captures persistence through additional AR lags. All models are reasonably parsimonious relative to the 259-observation estimation sample.
 
 **Interest rates (`r_t`):** The top AIC candidates all involve first differencing (`d = 1`) combined with high-order AR components, consistent with the visual evidence of prolonged level shifts and very slow mean-reversion in once-differenced rates. The leading adequate models — ARIMA(8,1,2), ARIMA(7,1,2), and ARIMA(8,1,1) — all pass the Ljung-Box adequacy test at 12 lags, with p-values between 0.14 and 0.19. The high AR order is required to capture the substantial autocorrelation remaining in `Δr_t`.
 
@@ -76,24 +76,24 @@ Since the question asks for adequate inflation models to be used for forecasting
 
 **Figure 3: `fig2a_forecast.png`**
 
-| Quarter | ARIMA(2,0,10) | ARIMA(4,0,9) | ARIMA(2,0,9) | 68% CI Lower | 68% CI Upper | 95% CI Lower | 95% CI Upper |
+| Quarter | ARIMA(3,0,3) | ARIMA(1,0,6) | ARIMA(5,0,3) | 68% CI Lower | 68% CI Upper | 95% CI Lower | 95% CI Upper |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| 2024Q1 | 0.008712 | 0.008681 | 0.008697 | 0.007427 | 0.009997 | 0.006194 | 0.011230 |
-| 2024Q2 | 0.008543 | 0.008498 | 0.008521 | 0.006178 | 0.010908 | 0.003908 | 0.013178 |
-| 2024Q3 | 0.008948 | 0.008906 | 0.008934 | 0.005602 | 0.012294 | 0.002389 | 0.015507 |
-| 2024Q4 | 0.008871 | 0.008835 | 0.008862 | 0.004356 | 0.013386 | 0.000021 | 0.017721 |
-| 2025Q1 | 0.008816 | 0.008791 | 0.008807 | 0.003798 | 0.013834 | −0.001019 | 0.018651 |
-| 2025Q2 | 0.008883 | 0.008861 | 0.008876 | 0.003490 | 0.014276 | −0.001688 | 0.019454 |
-| 2025Q3 | 0.008892 | 0.008873 | 0.008888 | 0.003158 | 0.014626 | −0.002347 | 0.020131 |
-| 2025Q4 | 0.008889 | 0.008874 | 0.008884 | 0.002904 | 0.014874 | −0.002841 | 0.020619 |
+| 2024Q1 | 0.008699 | 0.008527 | 0.008697 | 0.007410 | 0.009988 | 0.006158 | 0.011240 |
+| 2024Q2 | 0.008529 | 0.008246 | 0.008607 | 0.006188 | 0.010869 | 0.003916 | 0.013141 |
+| 2024Q3 | 0.008932 | 0.008493 | 0.009080 | 0.005590 | 0.012273 | 0.002346 | 0.015518 |
+| 2024Q4 | 0.008852 | 0.008212 | 0.008922 | 0.004378 | 0.013327 | 0.000034 | 0.017671 |
+| 2025Q1 | 0.008798 | 0.008218 | 0.008868 | 0.003808 | 0.013787 | −0.001036 | 0.018630 |
+| 2025Q2 | 0.008867 | 0.008348 | 0.008947 | 0.003504 | 0.014230 | −0.001702 | 0.019436 |
+| 2025Q3 | 0.008878 | 0.008419 | 0.008894 | 0.003176 | 0.014581 | −0.002360 | 0.020117 |
+| 2025Q4 | 0.008875 | 0.008482 | 0.008917 | 0.002923 | 0.014828 | −0.002857 | 0.020607 |
 
-All three models forecast quarterly inflation converging toward a long-run mean just under 0.009 — exactly the behaviour a stationary ARMA model produces, as the forecast reverts to the unconditional mean once the effect of initial conditions fades. The three models agree very closely in the near term, with minor divergence at longer horizons reflecting their different MA lag structures.
+All three models forecast quarterly inflation converging toward the unconditional mean as the horizon extends — the behaviour of a stationary ARMA process. ARIMA(3,0,3) and ARIMA(5,0,3) cluster closely around 0.0088–0.0091, while ARIMA(1,0,6) produces somewhat lower forecasts in the near term (around 0.0082–0.0085) before converging toward a similar long-run level, reflecting how its longer MA polynomial shapes the short-horizon dynamics differently from the AR-heavier specifications.
 
 ### 2(c) Policy Use and Forecast Uncertainty
 
 Forecasts of `Δp_t` are useful for policy because decisions depend not only on current conditions but also on the expected future path of inflation. A central bank setting the policy rate needs to know whether inflation is likely to remain above target or ease, since the appropriate stance depends on where prices are heading, not where they are. Fiscal authorities similarly rely on inflation projections to index spending programmes and to assess the real burden of debt.
 
-The most fundamental source of uncertainty is the unknown future — future shocks that have not yet occurred. This is why the predictive intervals widen steadily over the horizon. For ARIMA(2,0,10), the 95% interval spans roughly 0.005 in total width at 2024Q1 and widens to over 0.023 by 2025Q4. Even though the point forecasts remain near 0.009 throughout, the range of plausible outcomes becomes much larger as the forecast extends. This widening is a direct implication of the MA(∞) representation: each additional step adds an unobserved innovation, and the cumulative uncertainty grows with horizon.
+The most fundamental source of uncertainty is the unknown future — future shocks that have not yet occurred. This is why the predictive intervals widen steadily over the horizon. For ARIMA(3,0,3), the 95% interval spans roughly 0.005 in total width at 2024Q1 and widens to over 0.023 by 2025Q4. Even though the point forecasts remain near 0.009 throughout, the range of plausible outcomes becomes much larger as the forecast extends. This widening is a direct implication of the MA(∞) representation: each additional step adds an unobserved innovation, and the cumulative uncertainty grows with horizon.
 
 There is also model uncertainty, evident in the spread across the three inflation specifications, and estimation uncertainty arising because all coefficients are estimated from a finite sample and would differ across samples. The predictive intervals reported here reflect only innovation uncertainty; they do not account for the additional dispersion introduced by parameter estimation error or model misspecification, so the true forecast risk is wider than the reported bands suggest. Using three models rather than one partly addresses model uncertainty, since the spread of their point forecasts indicates how sensitive the central outlook is to specification choices.
 
@@ -107,25 +107,25 @@ Finally, these forecasts rely on the assumption that the historical pattern of i
 
 The actual quarterly inflation rates for 2024Q1–2025Q3 are computed from the provided price-level data as `Δp_t = log(P_t) − log(P_{t−1})`, with `P_{2023Q4}` as the last in-sample observation.
 
-| Quarter | Actual `Δp_t` | ARIMA(2,0,10) | ARIMA(4,0,9) | ARIMA(2,0,9) |
+| Quarter | Actual `Δp_t` | ARIMA(3,0,3) | ARIMA(1,0,6) | ARIMA(5,0,3) |
 |---|---:|---:|---:|---:|
-| 2024Q1 | 0.007977 | 0.008712 | 0.008681 | 0.008697 |
-| 2024Q2 | 0.008286 | 0.008543 | 0.008498 | 0.008521 |
-| 2024Q3 | 0.007614 | 0.008948 | 0.008906 | 0.008934 |
-| 2024Q4 | 0.006356 | 0.008871 | 0.008835 | 0.008862 |
-| 2025Q1 | 0.007111 | 0.008816 | 0.008791 | 0.008807 |
-| 2025Q2 | 0.006337 | 0.008883 | 0.008861 | 0.008876 |
-| 2025Q3 | 0.006428 | 0.008892 | 0.008873 | 0.008888 |
+| 2024Q1 | 0.007964 | 0.008699 | 0.008527 | 0.008697 |
+| 2024Q2 | 0.008313 | 0.008529 | 0.008246 | 0.008607 |
+| 2024Q3 | 0.007613 | 0.008932 | 0.008493 | 0.009080 |
+| 2024Q4 | 0.006339 | 0.008852 | 0.008212 | 0.008922 |
+| 2025Q1 | 0.007146 | 0.008798 | 0.008218 | 0.008868 |
+| 2025Q2 | 0.006288 | 0.008867 | 0.008348 | 0.008947 |
+| 2025Q3 | 0.006477 | 0.008878 | 0.008419 | 0.008894 |
 
 Forecast performance:
 
 | Model | MSFE | RMSFE | MAE |
 |---|---:|---:|---:|
-| ARIMA(2,0,10) | 3.3712e−06 | 0.001836 | 0.001624 |
-| ARIMA(4,0,9)  | 3.1084e−06 | 0.001763 | 0.001538 |
-| ARIMA(2,0,9)  | 3.2418e−06 | 0.001800 | 0.001582 |
+| ARIMA(3,0,3) | 3.3983e−06 | 0.001843 | 0.001631 |
+| ARIMA(1,0,6) | 1.9668e−06 | 0.001402 | 0.001208 |
+| ARIMA(5,0,3) | 3.6184e−06 | 0.001902 | 0.001696 |
 
-ARIMA(4,0,9) ranks first on all three measures, though the differences across models are small. The more important observation is that all three models produce the same directional failure: every model over-predicts inflation throughout the hold-out window. All three anchored their forecasts near the in-sample unconditional mean of approximately 0.0089, while actual inflation fell steadily, reaching the 0.006–0.008 range from mid-2024 onwards. The realised values still lie within the 95% predictive intervals in the early quarters, but the systematic bias — consistently above the actual path — reflects a structural shift rather than random forecast error.
+ARIMA(1,0,6) ranks first on all three measures by a substantial margin, achieving an RMSFE nearly 25% lower than the other two. Its lower near-term forecasts (around 0.0082–0.0085) happen to be closer to the actual post-2024 disinflation path than the higher forecasts from ARIMA(3,0,3) and ARIMA(5,0,3). However, the more important observation is that all three models produce the same directional failure: every model over-predicts inflation throughout the hold-out window. The two AR-dominant specifications anchored their forecasts near the in-sample unconditional mean of approximately 0.0088–0.0091, while actual inflation fell steadily, reaching the 0.006–0.008 range from mid-2024 onwards. The realised values still lie within the 95% predictive intervals in the early quarters, but the systematic bias — consistently above the actual path — reflects a structural shift rather than random forecast error.
 
 This is not a model-fitting failure. The ARIMA models were adequate fits to the in-sample data. The problem is that the post-2021 disinflation played out faster and more completely than any backward-looking ARMA model could anticipate, since such models extrapolate historical average dynamics rather than responding to changing macroeconomic conditions. When the regime shifts — here, a rapid unwinding of pandemic-era price pressures — models within the same ARIMA class tend to miss the turning point together, which is why model choice among the three matters less than the shared limitation of purely backward-looking forecasting.
 
@@ -155,11 +155,11 @@ Formally, if `r_t` is I(1) and `100·Δp_t` is I(0), their difference `rr_t` sho
 
 | Model for `rr_t` | AIC | BIC | Ljung-Box p-value |
 |---|---:|---:|---:|
-| ARIMA(8,0,1) | 1284.73 | 1336.49 | 0.3102 |
+| ARIMA(8,0,1) | 463.82 | 502.94 | 0.909 |
 
-Key estimated coefficients: `ar1 = 1.1823`, `ar2 = −0.2814`, `ar3 = −0.0492`, `ar4 = −0.0331`, `ar5 = 0.0214`, `ar6 = −0.0108`, `ar7 = −0.0673`, `ar8 = −0.1193`, `ma1 = −0.8462`, `intercept = 3.614`.
+Key estimated coefficients: `ar1 = 0.5767`, `ar2 = 0.3471`, `ar3 = 0.0536`, `ar4 = 0.1090`, `ar5 = −0.1204`, `ar6 = 0.0690`, `ar7 = −0.3897`, `ar8 = 0.2937`, `ma1 = 0.8700`, `intercept = 3.350`.
 
-The choice of `d = 0` reflects the Fisher hypothesis: the real rate is treated as a stationary, mean-reverting series around a long-run average of approximately 3.6%, even though its cycle is very slow. The estimated AR(1) coefficient of 1.18, balanced out by the subsequent AR terms, is the model's way of capturing the multi-year swings visible in the Q4(a) plot — quasi-permanent deviations that eventually reverse — without requiring a unit root. Lower-order specifications left systematic patterns in the residuals; AR(8) is needed because each lag contributes incrementally to explaining the very gradual return to mean after a shock. The MA(1) term at −0.85 provides additional short-run flexibility in capturing the initial shock response. Together, the model matches the two dominant features of the plot: very slow mean-reversion and a clearly positive long-run average, both of which are inconsistent with a unit root and consistent with stationary but highly persistent dynamics.
+The choice of `d = 0` reflects the Fisher hypothesis: the real rate is treated as a stationary, mean-reverting series around a long-run average of approximately 3.4%, even though its cycle is very slow. The AR(1) coefficient of 0.58, together with the subsequent AR terms, captures the strong positive autocorrelation in `rr_t` without requiring a unit root — the AR polynomial collectively describes the multi-year swings visible in the Q4(a) plot, where deviations from the long-run mean persist but ultimately reverse. Lower-order specifications left systematic patterns in the residuals; AR(8) is needed because each lag contributes incrementally to explaining the very gradual return to mean after a shock. The large positive MA(1) term provides additional flexibility in capturing the initial shock response. Together, the model matches the two dominant features of the plot: very slow mean-reversion and a clearly positive long-run average, both of which are inconsistent with a unit root and consistent with stationary but highly persistent dynamics.
 
 ### 4(d) Best Adequate ARIMA Model for `cy_t`
 
