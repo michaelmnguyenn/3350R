@@ -161,7 +161,7 @@ Formally, if `r_t` is I(1) and `100·Δp_t` is I(0), their difference `rr_t` sho
 |---|---:|---:|---:|
 | ARIMA(8,0,1) | 463.82 | 502.94 | 0.909 |
 
-Key estimated coefficients: `ar1 = 0.5767`, `ar2 = 0.3471`, `ar3 = 0.0536`, `ar4 = 0.1090`, `ar5 = −0.1204`, `ar6 = 0.0690`, `ar7 = −0.3897`, `ar8 = 0.2937`, `ma1 = 0.8700`, `intercept = 3.350`.
+Key estimated coefficients: `φ₁ = 0.5767`, `φ₂ = 0.3471`, `φ₃ = 0.0536`, `φ₄ = 0.1090`, `φ₅ = −0.1204`, `φ₆ = 0.0690`, `φ₇ = −0.3897`, `φ₈ = 0.2937`, `θ₁ = 0.8700`, `μ = 3.350`.
 
 The choice of `d = 0` reflects the Fisher hypothesis: the real rate is treated as a stationary, mean-reverting series around a long-run average of approximately 3.4%, even though its cycle is very slow. The AR(1) coefficient of 0.58, together with the subsequent AR terms, captures the strong positive autocorrelation in `rr_t` without requiring a unit root — the AR polynomial collectively describes the multi-year swings visible in the Q4(a) plot, where deviations from the long-run mean persist but ultimately reverse. Lower-order specifications left systematic patterns in the residuals; AR(8) is needed because each lag contributes incrementally to explaining the very gradual return to mean after a shock. The large positive MA(1) term provides additional flexibility in capturing the initial shock response. Together, the model matches the two dominant features of the plot: very slow mean-reversion and a clearly positive long-run average, both of which are inconsistent with a unit root and consistent with stationary but highly persistent dynamics.
 
@@ -173,7 +173,7 @@ A search over `d ∈ {0,1}` and `p, q = 0,...,4` was carried out using AIC and B
 |---|---:|---:|---:|
 | ARIMA(3,1,3) | −2135.65 | −2107.20 | 0.7626 |
 
-Key estimated coefficients: `ar1 = 0.6092`, `ar2 = −0.5732`, `ar3 = 0.7553`, `ma1 = −0.8316`, `ma2 = 0.6862`, `ma3 = −0.8547`, `drift = 0.0003`.
+Key estimated coefficients: `φ₁ = 0.6092`, `φ₂ = −0.5732`, `φ₃ = 0.7553`, `θ₁ = −0.8316`, `θ₂ = 0.6862`, `θ₃ = −0.8547`, `drift = 0.0003`.
 
 First differencing is the appropriate treatment for `cy_t` because the series shows clear, sustained upward movement throughout the sample — it does not oscillate around a fixed mean but instead trends from approximately 0.59 to 0.69 over the 65-year sample. Taking the first difference removes this stochastic trend component and yields a stationary series to which ARMA dynamics can be applied. The small positive drift of 0.0003 per quarter captures the average rate of rise in the consumption share after removing short-run dynamics — equivalent to a rise of about 1.2 percentage points per decade, matching the historical average observed in the plot. The AR(3) component reflects that deviations from this drift path are themselves persistent: a quarter where consumption grows faster than trend tends to be followed by further above-trend quarters before reverting, a pattern consistent with household consumption exhibiting momentum due to habit formation and smooth adjustment to permanent income shocks. The MA(3) structure captures the short-lived idiosyncratic shocks that die away within a few quarters. Together, the ARIMA(3,1,3) with drift captures both the dominant long-run feature of the data (the trend in the level of `cy_t`) and its short-run dynamics (autocorrelated quarterly fluctuations around that trend).
 
@@ -246,14 +246,14 @@ For each chosen mean equation, symmetric GARCH(1,1), asymmetric GJR-GARCH(1,1), 
 
 Estimated coefficients:
 
-| Currency | `mu` | `ar1` | `ma1` | `omega` | `alpha1` | `beta1` | `beta2` | `gamma1` | `shape` |
+| Currency | `μ` | `φ₁` | `θ₁` | `ω` | `α` | `β₁` | `β₂` | `γ` | `ν` |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | CNY | −0.0145 | — | — | 0.0105 | 0.0256 | 0.3652 | 0.5282 | 0.0898 | 8.2296 |
 | USD | −0.0149 | — | — | 0.0074 | 0.0062 | 0.2176 | 0.7123 | 0.0849 | 8.8065 |
 | TWI | −0.0071 | −0.0382 | — | 0.0112 | 0.0356 | 0.2603 | 0.6087 | 0.0893 | 8.3771 |
 | SDR | −0.0095 | — | −0.1787 | 0.0101 | 0.0348 | 0.1801 | 0.7255 | 0.0635 | 8.0817 |
 
-The GJR-GARCH(1,2) specification distributes GARCH persistence across two lags; the combined `beta1 + beta2` ranges from 0.89 to 0.93 across currencies, confirming highly persistent volatility shocks — a spike in conditional variance takes a long time to decay. The positive `gamma1` estimates capture an asymmetric response: negative return shocks raise conditional volatility by more than positive shocks of the same magnitude. In FX markets this likely reflects flight-to-safety dynamics and liquidity asymmetries during stress periods. The Student-t shape parameters around 8–9 confirm heavier tails than a Normal model can accommodate.
+The GJR-GARCH(1,2) specification distributes GARCH persistence across two lags; the combined β₁ + β₂ ranges from 0.89 to 0.93 across currencies, confirming highly persistent volatility shocks — a spike in conditional variance takes a long time to decay. The positive γ estimates capture an asymmetric response: negative return shocks raise conditional volatility by more than positive shocks of the same magnitude. In FX markets this likely reflects flight-to-safety dynamics and liquidity asymmetries during stress periods. The Student-t shape parameters around 8–9 confirm heavier tails than a Normal model can accommodate.
 
 ### Diagnostics and Volatility Plots
 
