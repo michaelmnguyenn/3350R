@@ -23,6 +23,21 @@ def set_default_style(document: Document) -> None:
     style.font.size = Pt(12)
 
 
+def add_title_page(document: Document) -> None:
+    p = document.add_heading("ECON3350 Research Report", level=1)
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    sub = document.add_paragraph("Applied Econometrics for Macroeconomics and Finance")
+    sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    for run in sub.runs:
+        run.font.size = Pt(14)
+
+    date_p = document.add_paragraph("17 April 2026")
+    date_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    document.add_page_break()
+
+
 def add_markdown_table(document: Document, rows: list[str]) -> None:
     data = []
     for row in rows:
@@ -39,7 +54,8 @@ def add_markdown_table(document: Document, rows: list[str]) -> None:
     for row in body:
         cells = table.add_row().cells
         for i, value in enumerate(row):
-            cells[i].text = value
+            if i < len(cells):
+                cells[i].text = value
     document.add_paragraph("")
 
 
@@ -65,6 +81,7 @@ def add_figure_block(document: Document, line: str) -> None:
 def build_docx() -> None:
     document = Document()
     set_default_style(document)
+    add_title_page(document)
 
     lines = MARKDOWN_PATH.read_text(encoding="utf-8").splitlines()
     i = 0
@@ -91,8 +108,6 @@ def build_docx() -> None:
             continue
 
         if line.startswith("# "):
-            title = document.add_heading(clean_inline(line[2:]), level=1)
-            title.alignment = WD_ALIGN_PARAGRAPH.CENTER
             i += 1
             continue
 
@@ -124,3 +139,4 @@ def build_docx() -> None:
 
 if __name__ == "__main__":
     build_docx()
+    print(f"Saved: {OUTPUT_PATH}")
