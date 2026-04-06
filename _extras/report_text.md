@@ -42,7 +42,7 @@ A rationale for these estimations is that they help characterise the trend behav
 
 In this sample the estimates are quite close. For `y_t`, the estimated trend is 0.004724 while the mean of `Δy_t` is 0.004902; for `c_t`, 0.005272 versus 0.005375. The gap is slightly larger for `p_t` (0.009989 versus 0.009254), which is consistent with the plot showing somewhat less smooth trend behaviour — the high-inflation 1970s and subsequent disinflation distort a single linear trend more than they distort the average of quarterly changes.
 
-This comparison alone does not establish whether the processes contain unit roots; that requires formal unit root testing.
+This comparison is motivated by the difference-stationarity hypothesis: if `p_t = α + δt + u_t` where `u_t` is I(0), then `Δp_t = δ + Δu_t` and `E[Δp_t] = δ`. In practice, the two estimates are not algebraically identical because the OLS trend regression minimises squared deviations from a linear trend while the sample mean of `Δp_t` does not impose linearity. The closeness of the estimates supports — without formally establishing — the view that each series is well approximated by a linear trend plus a stationary component. This comparison alone does not establish whether the processes contain unit roots; that requires formal testing. It does, however, motivate treating the first differences as the objects of primary interest for modelling: if the levels are trending and non-stationary, the differences are the stationary series whose dynamics can be modelled with ARMA specifications.
 
 ---
 
@@ -62,7 +62,11 @@ A broad set of ARIMA(p,d,q) models was estimated for `Δp_t` and `r_t` over the 
 
 All three models include both AR and MA components, reflecting the mixed short-run autocorrelation dynamics of quarterly inflation. ARIMA(3,0,3) achieves the best AIC and BIC and is used as the primary benchmark for interval construction; ARIMA(1,0,6) trades parsimonious AR structure for a richer MA lag polynomial; ARIMA(5,0,3) captures persistence through additional AR lags. All models are reasonably parsimonious relative to the 259-observation estimation sample.
 
-**Interest rates (`r_t`):** The top AIC candidates all involve first differencing (`d = 1`) combined with high-order AR components, consistent with the visual evidence of prolonged level shifts and very slow mean-reversion in once-differenced rates. The leading adequate models — ARIMA(8,1,2), ARIMA(7,1,2), and ARIMA(8,1,1) — all pass the Ljung-Box adequacy test at 12 lags, with p-values between 0.14 and 0.19. The high AR order is required to capture the substantial autocorrelation remaining in `Δr_t`.
+**Interest rates (`r_t`):** Selecting the integration order for `r_t` requires weighing statistical evidence against economic theory. Statistically, the lowest-AIC adequate models all require first differencing (`d = 1`): ARIMA(8,1,2), ARIMA(7,1,2), and ARIMA(8,1,1) achieve AIC values in the range 475–477 with Ljung-Box p-values between 0.14 and 0.19, while the best d=0 model passing the same adequacy screen has a materially higher AIC. The visual evidence is consistent with d=1 — `r_t` shows prolonged level shifts across rate regimes (rising through the 1970s, declining through the 1980s–2000s, near-zero in the 2010s, rising after 2021) rather than rapid return to a fixed mean, and the autocorrelation function of `r_t` decays very slowly.
+
+However, the **Fisher hypothesis** provides an economic argument for treating `r_t` as I(0). If the nominal interest rate equals the expected real rate plus expected inflation — `r_t ≈ rr_t + E_t[Δp_{t+1}]` — and if `rr_t` is I(0) (as supported in Question 4) and `Δp_t` is I(0), then the nominal rate `r_t` must also be I(0), since it is a linear combination of two stationary series. Under this view, apparent non-stationarity in `r_t` reflects the slow adjustment of a highly persistent but ultimately mean-reverting process. The d=0 approach is therefore economically defensible and is adopted in the exemplar literature for exactly this reason.
+
+The present report follows the data-driven d=1 result, since among models that genuinely pass the Ljung-Box adequacy screen, the d=1 specifications achieve substantially lower AIC and provide better in-sample fit without relying on a particular economic theory being correct:
 
 | Interest rate model | AIC | BIC | Ljung-Box p-value | Selected |
 |---|---:|---:|---:|---|
@@ -70,7 +74,7 @@ All three models include both AR and MA components, reflecting the mixed short-r
 | ARIMA(7,1,2) | 476.69 | 515.81 | 0.189 | Adequate |
 | ARIMA(8,1,1) | 476.92 | 516.04 | 0.164 | Adequate |
 
-Since the question asks for adequate inflation models to be used for forecasting, the three inflation specifications above are used in Questions 2(b) and 3. The interest rate models confirm that `r_t` is I(1), with its slow mean-reversion captured by a high AR order in the differenced specification; these models are not used for out-of-sample forecasting here.
+The high AR order captures the substantial autocorrelation in `Δr_t`, reflecting the inertia of monetary policy cycles. Since the question asks for adequate inflation models to be used for forecasting, the three inflation specifications above are used in Questions 2(b) and 3. The interest rate models are reported here for completeness; they are not used for out-of-sample forecasting in this report.
 
 ### 2(b) Inflation Forecasts for 2024–2025
 
@@ -163,7 +167,7 @@ The choice of `d = 0` reflects the Fisher hypothesis: the real rate is treated a
 
 ### 4(d) Best Adequate ARIMA Model for `cy_t`
 
-A search over `d ∈ {0,1}` and `p, q = 0,...,4` was carried out using AIC and BIC ranking with Ljung-Box adequacy checking at 20 lags. The persistent upward movement in `cy_t` is consistent with a unit root, and the best adequate model requires first differencing:
+A search over `d ∈ {0,1}` and `p, q = 0,...,4` was carried out using AIC and BIC ranking with Ljung-Box adequacy checking at 20 lags. The persistent upward movement in `cy_t` is consistent with a unit root, and the best adequate model requires first differencing. Among d=0 candidates, high-order adequate specifications exist (e.g. ARIMA(8,0,3) with drift) but their AIC values are substantially higher than the best d=1 model, and the level plot does not show clear mean-reversion — the series continues trending upward through the end of the sample with no obvious tendency to revert to a fixed level, which is inconsistent with the d=0 assumption. The preferred model is therefore:
 
 | Model for `cy_t` | AIC | BIC | Ljung-Box p-value |
 |---|---:|---:|---:|
@@ -260,7 +264,7 @@ The GJR-GARCH(1,2) specification distributes GARCH persistence across two lags; 
 | TWI | 0.6180 | 0.0000 |
 | SDR | 0.9088 | 0.0000 |
 
-The mean equations are adequate — no important autocorrelation remains in the standardised residuals. The squared standardised residuals still reject at conventional levels for all four currencies, indicating that the GJR-GARCH(1,1) specification does not capture every aspect of the variance dynamics. Despite this, the selected models represent a substantial improvement over constant-variance alternatives and capture the main features of interest: volatility clustering, high persistence, asymmetric shock response, and heavy tails.
+The mean equations are adequate — no important autocorrelation remains in the standardised residuals. The squared standardised residuals still reject at conventional levels for all four currencies, indicating that the GJR-GARCH(1,2) specification does not fully capture every aspect of the variance dynamics. This is a common result with daily financial returns: extreme events such as the COVID-19 volatility spike generate tail behaviour and nonlinear variance dynamics that even flexible GARCH specifications cannot fully absorb. Despite this residual misfit in higher moments, the selected models represent a substantial improvement over constant-variance alternatives and capture the economically important features: volatility clustering, high persistence, asymmetric shock response, and heavy tails. Among all candidate specifications compared, GJR-GARCH(1,2) with Student-t errors achieves the lowest AIC for every currency, making it the best available model under the AIC criterion.
 
 **Figures 8–11: `fig6_vol_CNY.png`, `fig6_vol_USD.png`, `fig6_vol_TWI.png`, `fig6_vol_SDR.png`**
 
@@ -290,7 +294,7 @@ The model-implied variances are uniformly lower than the corresponding sample va
 
 ## Question 8
 
-The probability that the daily return falls below 0.01% on 13/01/2026 and 14/01/2026 is computed from the one-step-ahead and two-step-ahead GJR-GARCH forecasts, using the Student-t CDF with the estimated shape parameter so that the heavy-tail behaviour is properly accounted for.
+The probability that the daily return falls below the threshold of 0.01% on 13/01/2026 and 14/01/2026 is computed from the one-step-ahead and two-step-ahead GJR-GARCH forecasts. Returns are defined as `e_{j,t} = 100 × log(S_{j,t} / S_{j,t−1})`, so they are already expressed in percentage units, and the threshold 0.01% corresponds directly to the value 0.01 in those units. The Student-t CDF with the estimated shape parameter is used rather than the Normal CDF, so that the heavy-tail behaviour established in Question 6 is properly reflected in the probability estimates.
 
 | Currency | `μ_{T+1}` | `σ_{T+1}` | P(e < 0.01), 13 Jan | `μ_{T+2}` | `σ_{T+2}` | P(e < 0.01), 14 Jan |
 |---|---:|---:|---:|---:|---:|---:|
@@ -299,7 +303,7 @@ The probability that the daily return falls below 0.01% on 13/01/2026 and 14/01/
 | TWI | −0.0074 | 0.3830 | 0.5202 | −0.0071 | 0.3777 | 0.5201 |
 | SDR | −0.0242 | 0.4522 | 0.5337 | −0.0095 | 0.4444 | 0.5196 |
 
-All probabilities are slightly above 0.5. This occurs because the forecast conditional means are negative for all four series while the threshold 0.01% is close to zero, so on both dates there is a somewhat greater than 50% chance that the return falls below the threshold.
+All probabilities are slightly above 0.5. This occurs because the forecast conditional means are negative for all four series — reflecting a mild downward drift in AUD exchange rates against these counterparts — while the threshold 0.01% is close to zero. When the mean of the conditional distribution sits just below zero, a slightly greater than 50% probability mass lies below any threshold near zero, which is exactly what the Student-t CDF delivers here.
 
 A lower probability is preferable from a downside-risk perspective, since it means a smaller chance of earning less than the 0.01% threshold. On **13 January 2026**, the ranking from least to most downside risk is TWI (0.5202), CNY (0.5239), USD (0.5240), SDR (0.5337). On **14 January 2026**, the ranking shifts to SDR (0.5196), TWI (0.5201), CNY (0.5241), USD (0.5249).
 
