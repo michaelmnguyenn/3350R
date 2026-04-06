@@ -64,7 +64,7 @@ def add_figure_block(document: Document, line: str) -> None:
     image_names = re.findall(r"([A-Za-z0-9_]+\.png)", clean)
     if image_names:
         for image_name in image_names:
-            image_path = ROOT / image_name
+            image_path = ROOT.parent / image_name
             if image_path.exists():
                 paragraph = document.add_paragraph()
                 paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
