@@ -614,7 +614,7 @@ legend("topright",
 
 rrt <- r_aligned - 100*dpt #the log change were in decimals so not unit constant
 all.equal(length(r[-1]), length(dpt)) # check if they aligned
-cyt <- ct / yt
+cyt <- c/y
 
 plot(dates_aligned, cbind(rrt), type = "l", xlab = "Time (Quarters)", ylab= "Rate", main = "Real 3-Month Treasury Bill Secondary Market Rate")
 plot(dates_aligned, cbind(dpt*100), type = "l", xlab = "Time (Quarters)", ylab= "Rate", main = "Inflation")
@@ -751,7 +751,7 @@ checkresiduals1(Arima(rrt, order = c(8,0,1), include.constant = FALSE)) #p=0.307
 TT <- length(cyt)
 
 ARIMA_est_cyt <- list()
-ic_arima_cyt <- matrix(nrow = (2 * 2 + 2) * 4^2, ncol = 7)
+ic_arima_cyt <- matrix(nrow = (2 * 1 + 2) * 4^2, ncol = 7)
 colnames(ic_arima_cyt) <- c("const", "trend", "p", "d", "q", "aic", "bic")
 
 i <- 0
@@ -814,8 +814,7 @@ for (d in 0:1)
 ic_arima_cyt <- ic_arima_cyt[complete.cases(ic_arima_cyt), ]
 
 # top 10 by AIC and BIC
-ic_aic_cyt <- ic_arima_cyt[order(ic_arima_cyt[, 6]), ][1:10, ]
-ic_bic_cyt <- ic_arima_cyt[order(ic_arima_cyt[, 7]), ][1:10, ]
+ic_aic_cyt <- ic_arima_cyt[order(ic_arima_cyt[, 6]), ][1:10, ]>
 
 ic_aic_cyt
 ic_bic_cyt
@@ -827,9 +826,9 @@ ic_uni_cyt <- unique(rbind(ic_aic_cyt, ic_bic_cyt))
 ic_uni_cyt[order(ic_uni_cyt[, 7]), ][1:min(10, nrow(ic_uni_cyt)), ]
 ic_uni_cyt[order(ic_uni_cyt[, 6]), ][1:min(10, nrow(ic_uni_cyt)), ]
 
-#the best fitted model is arima(6,0,5)
+#the best fitted model is arima(8,0,3)
 
-checkresiduals1(Arima(cyt, order = c(6,0,5), include.constant = TRUE)) #p=0.074 
+checkresiduals1(Arima(cyt, order = c(8,0,3), include.constant = TRUE)) #p=0.153 
 
 
 
