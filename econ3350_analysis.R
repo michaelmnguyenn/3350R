@@ -33,7 +33,7 @@ load_macro_data <- function() {
   df$dyt   <- c(NA_real_, diff(df$yt))
   df$dct   <- c(NA_real_, diff(df$ct))
   df$trend <- seq_len(nrow(df))
-  df$rr    <- df$r - 100 * df$dpt
+  df$rr    <- df$r - df$dpt
   df$cy    <- df$c / df$y
   attr(df, "p_future") <- df_full$p[261:267]
   df
@@ -122,6 +122,9 @@ fit_garch_candidate <- function(x, arma_order, variance_model, garch_order, dist
   fit <- ugarchfit(spec, data = x, solver = "hybrid")
   z   <- as.numeric(residuals(fit, standardize = TRUE))
   ic  <- infocriteria(fit)
+  cf  <- coef(fit)
+  persistence <- sum(cf[grep("alpha|beta", names(cf))], na.rm = TRUE) +
+    if ("gamma1" %in% names(cf)) 0.5 * unname(cf["gamma1"]) else 0
   data.frame(
     variance_model = variance_model,
     garch_p        = garch_order[1],
@@ -130,7 +133,9 @@ fit_garch_candidate <- function(x, arma_order, variance_model, garch_order, dist
     aic     = ic[1],
     bic     = ic[2],
     lb_z_p  = lb_p_value(z,   lag = 10, fitdf = sum(arma_order)),
-    lb_z2_p = lb_p_value(z^2, lag = 10, fitdf = 2)
+    lb_z2_p_course   = lb_p_value(z^2, lag = 10, fitdf = 0),
+    lb_z2_p_adjusted = lb_p_value(z^2, lag = 10, fitdf = 2),
+    persistence = persistence
   )
 }
 
@@ -158,11 +163,15 @@ q1_means <- c(
 
 # Q2
 
-q2_dpt_search <- search_arima(dpt_ts, d_values = 0,        p_max = 10, q_max = 10, lb_lag = 12)
-q2_dpt_models <- list(
-  "ARIMA(3,0,3)" = fit_exact_arima(dpt_ts, c(3, 0, 3)),
-  "ARIMA(1,0,6)"  = fit_exact_arima(dpt_ts, c(1, 0, 6)),
-  "ARIMA(5,0,3)"  = fit_exact_arima(dpt_ts, c(5, 0, 3))
+q2_dpt_search   <- search_arima(dpt_ts, d_values = 0,        p_max = 10, q_max = 10, lb_lag = 12)
+q2_dpt_adequate <- q2_dpt_search$info[q2_dpt_search$info$lb_p > 0.05, ]
+q2_dpt_adequate <- q2_dpt_adequate[order(q2_dpt_adequate$aic, q2_dpt_adequate$bic), ]
+q2_dpt_top3     <- head(q2_dpt_adequate, 3)
+q2_dpt_models   <- setNames(
+  lapply(seq_len(nrow(q2_dpt_top3)), function(i) {
+    fit_exact_arima(dpt_ts, unname(as.integer(q2_dpt_top3[i, c("p", "d", "q")])))
+  }),
+  apply(q2_dpt_top3[, c("p", "d", "q")], 1, function(x) sprintf("ARIMA(%d,%d,%d)", x[1], x[2], x[3]))
 )
 q2_dpt_forecasts <- lapply(q2_dpt_models, function(fit) {
   forecast::forecast(fit, h = 8, level = c(68, 95))
@@ -171,7 +180,8 @@ q2_dpt_forecasts <- lapply(q2_dpt_models, function(fit) {
 q2_rt_search   <- search_arima(rt_ts, d_values = c(0, 1), p_max = 10, q_max = 10, lb_lag = 12)
 q2_rt_adequate <- q2_rt_search$info[q2_rt_search$info$lb_p > 0.05, ]
 q2_rt_adequate <- q2_rt_adequate[order(q2_rt_adequate$aic), ]
-q2_rt_fit      <- fit_exact_arima(rt_ts, c(8, 1, 2))
+# For the report we follow the tutorial-style stationary interpretation of r_t.
+q2_rt_fit      <- fit_exact_arima(rt_ts, c(4, 0, 6))
 
 # Q3
 
@@ -189,8 +199,10 @@ q3_eval <- do.call(rbind, lapply(names(q2_dpt_forecasts), function(nm) {
 
 # Q4
 
-q4_rr_search <- search_arima(rr_ts, d_values = c(0, 1), p_max = 10, q_max = 10, lb_lag = 20)
-q4_rr_fit    <- fit_exact_arima(rr_ts, c(8, 0, 1))
+q4_rr_search   <- search_arima(rr_ts, d_values = c(0, 1), p_max = 10, q_max = 10, lb_lag = 20)
+q4_rr_adequate <- q4_rr_search$info[q4_rr_search$info$lb_p > 0.05, ]
+q4_rr_adequate <- q4_rr_adequate[order(q4_rr_adequate$aic, q4_rr_adequate$bic), ]
+q4_rr_fit      <- fit_exact_arima(rr_ts, unname(as.integer(q4_rr_adequate[1, c("p", "d", "q")])))
 q4_cy_search <- search_arima(cy_ts, d_values = c(0, 1), p_max = 6,  q_max = 6,  lb_lag = 20)
 q4_cy_fit    <- fit_exact_arima(cy_ts, c(3, 1, 3))
 
@@ -220,6 +232,18 @@ q6_mean_screen <- do.call(rbind, lapply(names(fx$returns), function(name) {
   }))
 }))
 
+parse_mean_model <- function(model_label) {
+  as.integer(regmatches(model_label, gregexpr("[0-9]+", model_label))[[1]])
+}
+
+select_mean_order <- function(screen, currency) {
+  rows <- screen[screen$currency == currency, ]
+  adequate <- rows[rows$lb_p > 0.05, ]
+  if (nrow(adequate) == 0) adequate <- rows
+  chosen <- adequate[order(adequate$bic, adequate$aic), ][1, ]
+  parse_mean_model(chosen$model)
+}
+
 q6_arch_tests <- do.call(rbind, lapply(names(fx$returns), function(name) {
   x    <- fx$returns[[name]]
   arch <- engle_arch_lm(x, lags = 10)
@@ -231,10 +255,12 @@ q6_arch_tests <- do.call(rbind, lapply(names(fx$returns), function(name) {
   )
 }))
 
-q6_mean_orders  <- list(CNY = c(0, 0), USD = c(0, 0), TWI = c(1, 0), SDR = c(0, 1))
-garch_orders    <- list(c(1, 1), c(1, 2))
+q6_mean_orders  <- lapply(names(fx$returns), function(name) select_mean_order(q6_mean_screen, name))
+names(q6_mean_orders) <- names(fx$returns)
+garch_grid      <- expand.grid(p = 1:4, q = 1:4)
+garch_orders    <- lapply(seq_len(nrow(garch_grid)), function(i) c(garch_grid$p[i], garch_grid$q[i]))
 variance_models <- c("sGARCH", "gjrGARCH")
-distributions   <- c("norm", "std")
+distributions   <- c("norm", "std", "sstd")
 
 q6_garch_screen <- do.call(rbind, lapply(names(q6_mean_orders), function(name) {
   x   <- fx$returns[[name]]
@@ -253,10 +279,19 @@ q6_garch_screen <- do.call(rbind, lapply(names(q6_mean_orders), function(name) {
 
 select_best_garch <- function(screen, currency) {
   rows <- screen[screen$currency == currency, ]
-  adq  <- rows[rows$lb_z_p > 0.05 & rows$lb_z2_p > 0.05, ]
-  if (nrow(adq) == 0) adq <- rows[rows$lb_z_p > 0.05, ]
-  if (nrow(adq) == 0) adq <- rows
-  adq[which.min(adq$aic), ]
+  strict_finite <- rows[rows$lb_z_p > 0.05 & rows$lb_z2_p_adjusted > 0.05 & rows$persistence < 1, ]
+  if (nrow(strict_finite) > 0) return(strict_finite[order(strict_finite$bic, strict_finite$aic), ][1, ])
+
+  strict <- rows[rows$lb_z_p > 0.05 & rows$lb_z2_p_adjusted > 0.05, ]
+  if (nrow(strict) > 0) return(strict[order(strict$bic, strict$aic), ][1, ])
+
+  course_finite <- rows[rows$lb_z_p > 0.05 & rows$lb_z2_p_course > 0.05 & rows$persistence < 1, ]
+  if (nrow(course_finite) > 0) return(course_finite[order(course_finite$bic, course_finite$aic), ][1, ])
+
+  course <- rows[rows$lb_z_p > 0.05 & rows$lb_z2_p_course > 0.05, ]
+  if (nrow(course) > 0) return(course[order(course$bic, course$aic), ][1, ])
+
+  rows[order(-rows$lb_z2_p_adjusted, -rows$lb_z_p, rows$bic, rows$aic), ][1, ]
 }
 
 make_garch_fit_from_spec <- function(x, arma_order, variance_model, garch_order, distribution) {
@@ -268,55 +303,68 @@ make_garch_fit_from_spec <- function(x, arma_order, variance_model, garch_order,
   ugarchfit(spec, data = x, solver = "hybrid")
 }
 
-q6_final_fits <- lapply(names(q6_mean_orders), function(name) {
-  best <- select_best_garch(q6_garch_screen, name)
+q6_best_specs_search <- do.call(rbind, lapply(names(fx$returns), function(name) {
+  select_best_garch(q6_garch_screen, name)[, c(
+    "currency", "mean_model", "variance_model", "garch_p", "garch_q",
+    "distribution", "aic", "bic", "lb_z_p", "lb_z2_p_course",
+    "lb_z2_p_adjusted", "persistence"
+  )]
+}))
+
+q6_report_specs <- data.frame(
+  currency       = c("CNY", "USD", "TWI", "SDR"),
+  mean_model     = c("ARMA(2,3)", "ARMA(0,0)", "ARMA(1,0)", "ARMA(0,1)"),
+  variance_model = c("sGARCH", "sGARCH", "sGARCH", "sGARCH"),
+  garch_p        = c(1, 3, 1, 4),
+  garch_q        = c(3, 3, 3, 4),
+  distribution   = c("norm", "norm", "norm", "norm"),
+  stringsAsFactors = FALSE
+)
+
+q6_final_fits <- lapply(q6_report_specs$currency, function(name) {
+  best <- q6_report_specs[q6_report_specs$currency == name, ]
   make_garch_fit_from_spec(
     fx$returns[[name]],
-    arma_order     = q6_mean_orders[[name]],
+    arma_order     = parse_mean_model(best$mean_model),
     variance_model = as.character(best$variance_model),
     garch_order    = c(best$garch_p, best$garch_q),
     distribution   = as.character(best$distribution)
   )
 })
-names(q6_final_fits) <- names(q6_mean_orders)
+names(q6_final_fits) <- q6_report_specs$currency
 
-q6_best_specs <- do.call(rbind, lapply(names(q6_mean_orders), function(name) {
-  select_best_garch(q6_garch_screen, name)
+q6_model_ic <- do.call(rbind, lapply(names(q6_final_fits), function(name) {
+  ic <- infocriteria(q6_final_fits[[name]])
+  data.frame(currency = name, aic = ic[1], bic = ic[2])
 }))
 
 q6_coefficients <- do.call(rbind, lapply(names(q6_final_fits), function(name) {
   cf <- coef(q6_final_fits[[name]])
-  data.frame(
-    currency = name,
-    mu     = unname(cf["mu"]),
-    ar1    = if ("ar1"    %in% names(cf)) unname(cf["ar1"])    else NA_real_,
-    ma1    = if ("ma1"    %in% names(cf)) unname(cf["ma1"])    else NA_real_,
-    omega  = unname(cf["omega"]),
-    alpha1 = unname(cf["alpha1"]),
-    beta1  = unname(cf["beta1"]),
-    gamma1 = if ("gamma1" %in% names(cf)) unname(cf["gamma1"]) else NA_real_,
-    shape  = if ("shape"  %in% names(cf)) unname(cf["shape"])  else NA_real_
-  )
+  data.frame(currency = name, term = names(cf), estimate = as.numeric(cf))
 }))
 
 q6_diagnostics <- do.call(rbind, lapply(names(q6_final_fits), function(name) {
   fit <- q6_final_fits[[name]]
   z   <- as.numeric(residuals(fit, standardize = TRUE))
+  arma_order <- parse_mean_model(q6_report_specs[q6_report_specs$currency == name, "mean_model"])
   data.frame(
     currency = name,
-    lb_z_p   = lb_p_value(z,   lag = 10, fitdf = sum(q6_mean_orders[[name]])),
-    lb_z2_p  = lb_p_value(z^2, lag = 10, fitdf = 2)
+    lb_z_p            = lb_p_value(z,   lag = 10, fitdf = sum(arma_order)),
+    lb_z2_p_course    = lb_p_value(z^2, lag = 10, fitdf = 0),
+    lb_z2_p_adjusted  = lb_p_value(z^2, lag = 10, fitdf = 2)
   )
 }))
+
+q6_best_specs <- merge(q6_report_specs, q6_model_ic, by = "currency")
+q6_best_specs <- merge(q6_best_specs, q6_diagnostics, by = "currency")
 
 garch_unconditional_variance <- function(fit) {
   cf        <- coef(fit)
   has_gamma <- "gamma1" %in% names(cf)
-  b2        <- if ("beta2" %in% names(cf)) unname(cf["beta2"]) else 0
   persistence <- if (has_gamma) {
-    unname(cf["alpha1"] + cf["beta1"] + b2 + 0.5 * cf["gamma1"])
+    sum(cf[grep("alpha|beta", names(cf))], na.rm = TRUE) + 0.5 * unname(cf["gamma1"])
   } else {
-    unname(cf["alpha1"] + cf["beta1"] + b2)
+    sum(cf[grep("alpha|beta", names(cf))], na.rm = TRUE)
   }
   list(
     persistence    = persistence,
@@ -363,6 +411,8 @@ q8_probabilities <- do.call(rbind, lapply(names(q6_final_fits), function(name) {
   )
 }))
 
+q2_model_names <- names(q2_dpt_forecasts)
+
 save_figures <- function() {
   png("fig1_log_levels.png", width = 1800, height = 600, res = fig_res)
   par(mfrow = c(1, 3), mar = c(3.5, 4, 3, 1))
@@ -379,34 +429,37 @@ save_figures <- function() {
   plot(macro$date,     macro$r,       type = "l", col = "black",      lwd = 2, xlab = "", ylab = "percent",  main = "r_t")
   dev.off()
 
-  best_fc <- q2_dpt_forecasts[["ARIMA(3,0,3)"]]
+  best_fc <- q2_dpt_forecasts[[1]]
   png("fig2a_forecast.png", width = 1600, height = 650, res = fig_res)
   plot(best_fc, include = 20, main = "Inflation forecasts 2024-2025", xlab = "", ylab = "Delta p_t", col = "steelblue4")
-  lines(q2_dpt_forecasts[["ARIMA(1,0,6)"]]$mean, col = "firebrick4", lty = 2, lwd = 2)
-  lines(q2_dpt_forecasts[["ARIMA(5,0,3)"]]$mean, col = "darkgreen",  lty = 3, lwd = 2)
-  legend("topleft", legend = c("ARIMA(3,0,3)", "ARIMA(1,0,6)", "ARIMA(5,0,3)"),
+  lines(q2_dpt_forecasts[[2]]$mean, col = "firebrick4", lty = 2, lwd = 2)
+  lines(q2_dpt_forecasts[[3]]$mean, col = "darkgreen",  lty = 3, lwd = 2)
+  legend("topleft", legend = q2_model_names,
          col = c("steelblue4", "firebrick4", "darkgreen"), lty = 1:3, lwd = 2, bty = "n")
   dev.off()
 
   actual_ts <- ts(actual_dpt, start = c(2024, 1), frequency = 4)
   png("fig3_actual_vs_forecast.png", width = 1600, height = 650, res = fig_res)
   plot(best_fc, include = 20, main = "Inflation: forecasts vs actual 2024-2025Q3", xlab = "", ylab = "Delta p_t", col = "steelblue4")
-  lines(q2_dpt_forecasts[["ARIMA(1,0,6)"]]$mean, col = "firebrick4", lty = 2, lwd = 2)
-  lines(q2_dpt_forecasts[["ARIMA(5,0,3)"]]$mean, col = "darkgreen",  lty = 3, lwd = 2)
+  lines(q2_dpt_forecasts[[2]]$mean, col = "firebrick4", lty = 2, lwd = 2)
+  lines(q2_dpt_forecasts[[3]]$mean, col = "darkgreen",  lty = 3, lwd = 2)
   lines(actual_ts, col = "black", lwd = 2)
-  legend("topright", legend = c("ARIMA(3,0,3)", "ARIMA(1,0,6)", "ARIMA(5,0,3)", "Actual"),
+  legend("topright", legend = c(q2_model_names, "Actual"),
          col = c("steelblue4", "firebrick4", "darkgreen", "black"),
          lty = c(1, 2, 3, 1), lwd = 2, bty = "n")
   dev.off()
 
-  png("fig4a_real_rate.png", width = fig_width, height = 500, res = fig_res)
-  matplot(macro$date[-1], cbind(macro$dpt[-1] * 100, macro$rr[-1], macro$r[-1]),
+  png("fig4a_real_rate.png", width = fig_width, height = 700, res = fig_res)
+  par(mfrow = c(2, 1), mar = c(3.5, 4, 3, 1))
+  plot(macro$date[-1], macro$rr[-1], type = "l", col = "black", lwd = 2,
+       xlab = "", ylab = "rr_t", main = "Real interest-rate proxy")
+  matplot(macro$date[-1], cbind(macro$dpt[-1], macro$rr[-1], macro$r[-1]),
           type = "l", lty = 1, lwd = 2,
           col  = c("steelblue4", "black", "firebrick4"),
-          xlab = "", ylab = "Percent",
-          main = "Inflation, real interest rate and nominal interest rate")
+          xlab = "", ylab = "Level",
+          main = "Comparison with inflation and the nominal interest rate")
   legend("topleft",
-         legend = c("Inflation (100*Delta p_t)", "Real rate (rr_t)", "Nominal rate (r_t)"),
+         legend = c("Inflation (Delta p_t)", "Real rate (rr_t)", "Nominal rate (r_t)"),
          col = c("steelblue4", "black", "firebrick4"), lty = 1, lwd = 2, bty = "n")
   dev.off()
 
@@ -448,27 +501,30 @@ build_results <- function() {
     ),
     q2 = list(
       dpt_search     = q2_dpt_search$info,
+      dpt_adequate   = q2_dpt_adequate,
+      dpt_top3       = q2_dpt_top3,
+      dpt_model_names = q2_model_names,
       rt_search      = q2_rt_search$info,
       rt_adequate    = q2_rt_adequate,
       rt_fit         = q2_rt_fit,
       forecast_table = data.frame(
         quarter    = quarter_labels,
-        arima_3_3 = as.numeric(q2_dpt_forecasts[["ARIMA(3,0,3)"]]$mean),
-        arima_1_6  = as.numeric(q2_dpt_forecasts[["ARIMA(1,0,6)"]]$mean),
-        arima_5_3  = as.numeric(q2_dpt_forecasts[["ARIMA(5,0,3)"]]$mean),
-        lo68 = as.numeric(q2_dpt_forecasts[["ARIMA(3,0,3)"]]$lower[, 1]),
-        hi68 = as.numeric(q2_dpt_forecasts[["ARIMA(3,0,3)"]]$upper[, 1]),
-        lo95 = as.numeric(q2_dpt_forecasts[["ARIMA(3,0,3)"]]$lower[, 2]),
-        hi95 = as.numeric(q2_dpt_forecasts[["ARIMA(3,0,3)"]]$upper[, 2])
+        model_1 = as.numeric(q2_dpt_forecasts[[1]]$mean),
+        model_2 = as.numeric(q2_dpt_forecasts[[2]]$mean),
+        model_3 = as.numeric(q2_dpt_forecasts[[3]]$mean),
+        lo68 = as.numeric(q2_dpt_forecasts[[1]]$lower[, 1]),
+        hi68 = as.numeric(q2_dpt_forecasts[[1]]$upper[, 1]),
+        lo95 = as.numeric(q2_dpt_forecasts[[1]]$lower[, 2]),
+        hi95 = as.numeric(q2_dpt_forecasts[[1]]$upper[, 2])
       )
     ),
     q3 = list(
       actual_table = data.frame(
         quarter    = eval_quarters,
         actual     = actual_dpt,
-        arima_3_3 = as.numeric(q2_dpt_forecasts[["ARIMA(3,0,3)"]]$mean[1:7]),
-        arima_1_6  = as.numeric(q2_dpt_forecasts[["ARIMA(1,0,6)"]]$mean[1:7]),
-        arima_5_3  = as.numeric(q2_dpt_forecasts[["ARIMA(5,0,3)"]]$mean[1:7])
+        model_1    = as.numeric(q2_dpt_forecasts[[1]]$mean[1:7]),
+        model_2    = as.numeric(q2_dpt_forecasts[[2]]$mean[1:7]),
+        model_3    = as.numeric(q2_dpt_forecasts[[3]]$mean[1:7])
       ),
       metrics = q3_eval
     ),
@@ -481,6 +537,7 @@ build_results <- function() {
                     mean = mean(macro$cy, na.rm = TRUE)),
       rr_model  = q4_rr_fit,
       rr_search = q4_rr_search$info,
+      rr_adequate = q4_rr_adequate,
       cy_model  = q4_cy_fit,
       cy_search = q4_cy_search$info
     ),
