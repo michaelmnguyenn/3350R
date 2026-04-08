@@ -304,6 +304,10 @@ ic_bic_dpt <- ic_arima_dpt[order(ic_arima_dpt[, 7]), ][1:10, ]
 ic_aic_dpt
 ic_bic_dpt
 
+ic_int_dpt <- intersect(as.data.frame(ic_aic_dpt),
+                               as.data.frame(ic_bic_dpt)) 
+ic_int_dpt
+
 #finding the union
 ic_uni_dpt <- unique(rbind(ic_aic_dpt, ic_bic_dpt))
 # Top 10 models according to BIC
@@ -326,14 +330,10 @@ ic_uni_dpt[order(ic_uni_dpt[, 6]),][1:10, ]
 
 #checking residuals
 #model 1
-checkresiduals1(Arima(dpt, order = c(3,0,3), include.constant = FALSE))
+checkresiduals1(Arima(dpt, order = c(2,0,10), include.constant = FALSE))
 
-# Model 2: (1,1,3,0,3)  --> trend model
-tt <- 1:length(dpt)
-checkresiduals1(Arima(dpt, order = c(3,0,3),
-                      xreg = x,
-                      include.constant = TRUE,
-                      include.drift = TRUE))
+# Model 2
+checkresiduals1(Arima(dpt, order = c(2,0,9), include.constant = FALSE))
 
 # Model 3: (0,0,3,0,3)
 checkresiduals1(Arima(dpt, order = c(3,0,3), include.constant = FALSE))
@@ -494,6 +494,45 @@ checkresiduals1(Arima(r, order = c(8,0,2), include.constant = FALSE)) #(0.19)
 
 #all models are below p value of 0.01, hence suggests that the model is inadequate
 #so we had to increase the model size, 0:10s
+
+r_ts <- ts(r, start = c(1959, 2), frequency = 4)
+hrz <- 7
+
+# fit models
+fit1_r <- Arima(r_ts, order = c(8,0,5), include.constant = FALSE)
+fit2_r <- Arima(r_ts, order = c(8,0,6), include.constant = FALSE)
+fit3_r  <- Arima(r_ts, order = c(8,0,2), include.constant = FALSE)
+
+# forecasts
+fcst1_r <- forecast(fit1_r, h = hrz, level = c(68,95))
+
+fcst2_r <- forecast(fit2_r, h = hrz, level = c(68,95))
+
+fcst3_r <- forecast(fit3_r, h = hrz, level = c(68,95))
+
+# plot 1
+
+plot(fcst1_r,
+     include = length(r_ts),
+     ylab = expression(r[t]),
+     xlab = "Time",
+     main = "r - ARIMA(8,0,5)")
+
+# plot 2
+
+plot(fcst2_r,
+     include = length(r_ts),
+     ylab = expression(r[t]),
+     xlab = "Time",
+     main = "r - ARIMA(8,0,6)")
+
+# plot 3
+
+plot(fcst3_r,
+     include = length(r_ts),
+     ylab = expression(Delta*p[t]),
+     xlab = "Time",
+     main = "r - ARIMA(8,0,2)")
 
 #---------------------------#
 
@@ -736,13 +775,16 @@ ic_bic_rrt
 # union of top AIC and BIC sets
 ic_uni_rrt <- unique(rbind(ic_aic_rrt, ic_bic_rrt))
 
+ic_uni_rrt
+
 # show union ranked by BIC and AIC
 ic_uni_rrt[order(ic_uni_rrt[, 7]), ][1:min(10, nrow(ic_uni_rrt)), ]
 ic_uni_rrt[order(ic_uni_rrt[, 6]), ][1:min(10, nrow(ic_uni_rrt)), ]
 
 #the best fitted model is arima(0,0,8,0,1)
 
-checkresiduals1(Arima(rrt, order = c(8,0,1), include.constant = FALSE)) #p=0.307
+checkresiduals1(Arima(rrt, order = c(8,0,5
+                                     ), include.constant = FALSE)) #p=0.307
 
 #Report an estimation of the best adequate ARIMA(p, d, q) model for cyt
 #Discuss how the model captures the dominant features of the plot in Question 4b.
@@ -759,9 +801,9 @@ for (d in 0:1)
 {
   for (const in 0:1)
   {
-    for (p in 0:10)
+    for (p in 0:3)
     {
-      for (q in 0:10)
+      for (q in 0:3)
       {
         i <- i + 1
         d1 <- as.logical(d)
@@ -814,7 +856,10 @@ for (d in 0:1)
 ic_arima_cyt <- ic_arima_cyt[complete.cases(ic_arima_cyt), ]
 
 # top 10 by AIC and BIC
-ic_aic_cyt <- ic_arima_cyt[order(ic_arima_cyt[, 6]), ][1:10, ]>
+
+ic_aic_cyt <- ic_arima_cyt[order(ic_arima_cyt[, 6]), ][1:10, ]
+
+ic_bic_cyt <- ic_arima_cyt[order(ic_arima_cyt[, 7]), ][1:10, ]
 
 ic_aic_cyt
 ic_bic_cyt
@@ -822,15 +867,32 @@ ic_bic_cyt
 # union of top AIC and BIC sets
 ic_uni_cyt <- unique(rbind(ic_aic_cyt, ic_bic_cyt))
 
+ic_uni_cyt
+
 # show union ranked by BIC and AIC
 ic_uni_cyt[order(ic_uni_cyt[, 7]), ][1:min(10, nrow(ic_uni_cyt)), ]
 ic_uni_cyt[order(ic_uni_cyt[, 6]), ][1:min(10, nrow(ic_uni_cyt)), ]
 
-#the best fitted model is arima(8,0,3)
+# const trend p d q       aic       bic
+# [1,]     1     1 3 0 2 -2146.133 -2117.648
+# [2,]     1     1 3 0 1 -2145.637 -2120.712
+# [3,]     1     1 3 0 3 -2144.156 -2112.110
+# [4,]     1     1 2 0 0 -2142.424 -2124.621
+# [5,]     1     1 1 0 1 -2142.296 -2124.492
+# [6,]     1     1 1 0 0 -2140.925 -2126.682
+# [7,]     1     1 1 0 2 -2140.619 -2119.254
+# [8,]     1     1 3 0 0 -2140.425 -2119.061
+# [9,]     1     1 2 0 1 -2140.424 -2119.060
+# [10,]     1     1 1 0 3 -2140.228 -2115.303
+# [11,]     0     0 0 1 1 -2127.425 -2120.312
+# [12,]     0     0 1 1 0 -2127.151 -2120.037
+# [13,]     0     0 0 1 0 -2122.228 -2118.671
 
-checkresiduals1(Arima(cyt, order = c(8,0,3), include.constant = TRUE)) #p=0.153 
+#the best fitted model is arima(3,0,2
 
-
+checkresiduals1(Arima(cyt, order = c(3,0,2), include.constant = TRUE, include.drift = TRUE)) 
+checkresiduals1(Arima(cyt, order = c(3,0,1), include.constant = TRUE, include.drift = TRUE))  
+checkresiduals1(Arima(cyt, order = c(3,0,3), include.constant = TRUE, include.drift = TRUE))
 
 
 
