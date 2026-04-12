@@ -12,6 +12,37 @@ ROOT = Path(__file__).resolve().parent
 MARKDOWN_PATH = ROOT / "report_text.md"
 OUTPUT_PATH = ROOT / "ECON3350_Research_Report.docx"
 
+FIGURE_FALLBACKS = {
+    "Figure 1": ["fig1_log_levels.png"],
+    "Figure 2": ["fig2_log_diffs.png"],
+    "Figure 3": ["fig2a_forecast.png"],
+    "Figures 4-6": [
+        "fig3_actual_vs_arima303.png",
+        "fig3_actual_vs_arima106.png",
+        "fig3_actual_vs_arima506.png",
+    ],
+    "Figures 4–6": [
+        "fig3_actual_vs_arima303.png",
+        "fig3_actual_vs_arima106.png",
+        "fig3_actual_vs_arima506.png",
+    ],
+    "Figure 7": ["fig4a_real_rate.png"],
+    "Figure 8": ["fig4b_consumption_ratio.png"],
+    "Figure 9": ["fig5b_abs_returns.png"],
+    "Figures 10-13": [
+        "fig6_vol_CNY.png",
+        "fig6_vol_USD.png",
+        "fig6_vol_TWI.png",
+        "fig6_vol_SDR.png",
+    ],
+    "Figures 10–13": [
+        "fig6_vol_CNY.png",
+        "fig6_vol_USD.png",
+        "fig6_vol_TWI.png",
+        "fig6_vol_SDR.png",
+    ],
+}
+
 
 def set_default_style(document: Document) -> None:
     style = document.styles["Normal"]
@@ -179,6 +210,9 @@ def add_figure_block(document: Document, line: str) -> None:
     image_names = re.findall(r"`([A-Za-z0-9_]+\.png)`", line)
     if not image_names:
         image_names = re.findall(r"([A-Za-z0-9_]+\.png)", line)
+    if not image_names:
+        stripped = re.sub(r"\*\*", "", line).strip().strip(":").strip()
+        image_names = FIGURE_FALLBACKS.get(stripped, [])
 
     if image_names:
         for image_name in image_names:

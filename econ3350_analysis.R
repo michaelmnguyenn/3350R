@@ -439,15 +439,19 @@ save_figures <- function() {
   dev.off()
 
   actual_ts <- ts(actual_dpt, start = c(2024, 1), frequency = 4)
-  png("fig3_actual_vs_forecast.png", width = 1600, height = 650, res = fig_res)
-  plot(best_fc, include = 20, main = "Inflation: forecasts vs actual 2024-2025Q3", xlab = "", ylab = "Delta p_t", col = "steelblue4")
-  lines(q2_dpt_forecasts[[2]]$mean, col = "firebrick4", lty = 2, lwd = 2)
-  lines(q2_dpt_forecasts[[3]]$mean, col = "darkgreen",  lty = 3, lwd = 2)
-  lines(actual_ts, col = "black", lwd = 2)
-  legend("topright", legend = c(q2_model_names, "Actual"),
-         col = c("steelblue4", "firebrick4", "darkgreen", "black"),
-         lty = c(1, 2, 3, 1), lwd = 2, bty = "n")
-  dev.off()
+  q3_files <- c("fig3_actual_vs_arima303.png", "fig3_actual_vs_arima106.png", "fig3_actual_vs_arima506.png")
+  q3_cols <- c("steelblue4", "firebrick4", "darkgreen")
+  q3_lty <- c(1, 2, 3)
+  for (i in seq_along(q2_dpt_forecasts)) {
+    png(q3_files[i], width = 1600, height = 650, res = fig_res)
+    plot(q2_dpt_forecasts[[i]], include = 20,
+         main = sprintf("Inflation: %s forecast vs actual 2024-2025Q3", q2_model_names[i]),
+         xlab = "", ylab = "Delta p_t", col = q3_cols[i])
+    lines(actual_ts, col = "black", lwd = 2)
+    legend("topright", legend = c(q2_model_names[i], "Actual"),
+           col = c(q3_cols[i], "black"), lty = c(q3_lty[i], 1), lwd = 2, bty = "n")
+    dev.off()
+  }
 
   png("fig4a_real_rate.png", width = fig_width, height = 700, res = fig_res)
   par(mfrow = c(2, 1), mar = c(3.5, 4, 3, 1))

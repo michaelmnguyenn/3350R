@@ -6,17 +6,17 @@
 
 ### 1(a) Exploratory Plots and Series Properties
 
-**Figure 1: `fig1_log_levels.png`**
+**Figure 1**
 
-**Figure 2: `fig2_log_diffs.png`**
+**Figure 2**
 
-The quarterly data cover the USA over 1959Q1–2023Q4 (260 observations). The series are the log price level `p_t`, log real GDP per capita `y_t`, log real consumption `c_t`, and the nominal 3-month T-bill rate `r_t`.
+The sample runs from 1959Q1 to 2023Q4 across the USA, giving 260 quarterly observations. The four series are the log price level `p_t`, log real GDP per capita `y_t`, log real consumption `c_t`, and the nominal 3-month T-bill rate `r_t`.
 
-The log-level plots of `p_t`, `y_t`, and `c_t` all show persistent upward movement over the sample. This suggests that these three processes have trending means and are unlikely to be covariance stationary in levels. `y_t` and `c_t` move closely together throughout, which is consistent with consumption and output sharing a common long-run growth path, while `p_t` rises more steeply, especially through the high-inflation period of the 1970s and early 1980s.
+Looking at the level plots first, all three of `p_t`, `y_t`, and `c_t` drift steadily upward across the sample. Trending means like these make covariance stationarity in levels look unlikely. `y_t` and `c_t` follow each other closely, which is consistent with the idea that output and consumption share a common long-run growth path. `p_t` rises more steeply than the others, particularly through the inflationary period of the 1970s and early 1980s.
 
-The log-difference plots of `Δp_t`, `Δy_t`, and `Δc_t` look much more stable than the level series. All three fluctuate around fairly constant means and do not display the same persistent upward movement, suggesting that differencing removes most of the trend. `Δp_t` is comparatively noisy but does not drift; `Δy_t` and `Δc_t` show very large negative observations around the Global Financial Crisis and again in 2020, but otherwise move around stable averages. This is consistent with the idea that the level processes are closer to difference stationary than trend stationary.
+Once the series are differenced the picture changes considerably. `Δp_t`, `Δy_t`, and `Δc_t` fluctuate around fairly stable means rather than drifting upward. Inflation is still the noisiest of the three, but it does not trend. Output and consumption growth both dip sharply around the Global Financial Crisis and again in 2020, though they return to stable averages outside those episodes. The differenced series behave more like difference-stationary processes than trend-stationary ones.
 
-The nominal interest rate `r_t` behaves differently from the other three series. It does not show steady growth, but instead exhibits long swings and regime-like persistence: it rises into the late 1970s and early 1980s, declines over subsequent decades, remains close to zero for much of the 2010s, and rises again after 2021. So, answering the question directly, the dominant feature of `r_t` is strong level persistence and apparent regime change rather than deterministic trend growth. That means `r_t` should not be interpreted in the same way as the log-level macro series.
+`r_t` is harder to categorise. Rather than climbing steadily, it moves through slow-moving regimes: rising into the late 1970s and early 1980s, declining over the following decades, sitting near zero through much of the 2010s, then increasing again after 2021. Its defining feature is persistence, possibly with some regime change. A deterministic trend does not describe it well, and for this reason `r_t` should not be read in the same way as the log-level macro variables.
 
 ### 1(b)(i) Trend Regressions on Log Levels
 
@@ -26,7 +26,7 @@ The nominal interest rate `r_t` behaves differently from the other three series.
 | `y_t` | 9.944853 | 0.004757 | 0.000042 | 0.9799 |
 | `c_t` | 9.429001 | 0.005305 | 0.000043 | 0.9834 |
 
-All three trend slope estimates are statistically significant with very small standard errors, and the high R² values confirm that a linear time trend accounts for most of the long-run variation in each log-level series.
+All three trend slopes are estimated precisely with very small standard errors, and the high R² values confirm that a simple linear trend accounts for most of the long-run variation in each log-level series.
 
 ### 1(b)(ii) Means of First Differences
 
@@ -38,11 +38,11 @@ All three trend slope estimates are statistically significant with very small st
 
 ### 1(b)(iii) Rationale and Comparison
 
-These estimates describe average growth in two different ways. The time-trend regression estimates the average deterministic linear trend in the level series, while the mean of first differences estimates the average quarter-to-quarter growth rate. If a series is well described as difference stationary with a stable mean in first differences, the two estimates should be close.
+The trend regression and the mean of first differences measure average growth differently. The regression fits one straight line through the entire level series, while the mean of first differences just averages the quarter-to-quarter movements. For a difference-stationary series with a stable drift, the two approaches should produce similar numbers.
 
-In this sample the estimates are quite close. For `y_t`, the estimated trend is 0.004757 while the mean of `Δy_t` is 0.004919; for `c_t`, 0.005305 versus 0.005379. The gap is slightly larger for `p_t` (0.010125 versus 0.009310), which is consistent with the plot showing somewhat less smooth trend behaviour. The high-inflation 1970s and subsequent disinflation distort a single linear trend more than they distort the average of quarterly changes.
+For `y_t` and `c_t` they do. The estimated trend slope for `y_t` is 0.004757, against a mean first difference of 0.004919. For `c_t`, the corresponding values are 0.005305 and 0.005379. The gap is wider for `p_t` (0.010125 versus 0.009310), which is not particularly surprising: the inflation surge of the 1970s and the subsequent disinflation distort a straight line fitted through the full sample more than they distort a simple average of quarterly changes.
 
-This comparison fits the idea of difference stationarity. The two numbers are not exactly the same because the regression imposes one straight line through the full sample, while the mean of first differences simply averages quarter-to-quarter changes. Even so, the closeness of the estimates supports the view that the level series have strong stochastic trends and are much more stable after differencing. This does not prove a unit root by itself, but it provides a clear rationale for working with the differenced series in later ARIMA analysis.
+The similarity of the numbers across all three series supports a difference-stationary reading. The regression forces a single linear path through 260 observations, which will always differ somewhat from period-by-period averaging. Even so, the close correspondence suggests the level series are driven by stochastic trends and stabilise after differencing. While this falls short of a formal unit-root test, it provides reasonable grounds for working with the differenced series in the ARIMA exercises that follow.
 
 ---
 
@@ -50,9 +50,9 @@ This comparison fits the idea of difference stationarity. The two numbers are no
 
 ### 2(a) Model Selection
 
-A broad set of ARIMA(p,d,q) models was estimated for `Δp_t` and `r_t` over 1959Q1–2023Q4, with `p, q` ranging from 0 to 10 and `d ∈ {0,1}`. Models were ranked by AIC and BIC and then screened using the Ljung-Box test at 12 lags. Models that left clear residual autocorrelation were not retained as adequate candidates.
+A broad grid of ARIMA(p,d,q) models was estimated for `Δp_t` and `r_t` over the full 1959Q1–2023Q4 sample, with `p, q` ranging from 0 to 10 and `d ∈ {0,1}`. Candidate models were ranked by AIC and BIC, then screened using the Ljung-Box test at 12 lags. Any specification leaving clear residual autocorrelation was excluded.
 
-**Inflation** (`Δp_t`): Unit root testing and the exploratory plots support treating `Δp_t` as stationary, so the appropriate differencing order is `d = 0`. The three best adequate models, ranked by AIC and passing the Ljung-Box screen at 12 lags, are:
+**Inflation** (`Δp_t`): Unit root testing and the exploratory plots both support treating `Δp_t` as stationary, so `d = 0` throughout. The three best-performing adequate specifications are:
 
 | Inflation model | AIC | BIC | Ljung-Box p-value |
 |---|---:|---:|---:|
@@ -60,9 +60,9 @@ A broad set of ARIMA(p,d,q) models was estimated for `Δp_t` and `r_t` over 1959
 | ARIMA(1,0,6) | −2685.30 | −2653.28 | 0.1150 |
 | ARIMA(5,0,6) | −2685.21 | −2638.97 | 0.0687 |
 
-All three models fit the short-run dynamics of quarterly inflation well. ARIMA(3,0,3) is the best adequate model because it combines adequacy with the lowest AIC and BIC of the reported candidates.
+All three capture the short-run dynamics of quarterly inflation reasonably well. ARIMA(3,0,3) is selected as the primary model: it has the lowest AIC and BIC in the set while passing the residual diagnostic screen.
 
-**Interest rates** (`r_t`): The plot for `r_t` shows long swings and slow adjustment rather than simple deterministic trend growth. That makes it reasonable to compare both stationary and differenced ARIMA specifications and then retain the adequate models with the strongest information-criterion support. In the final screen, the strongest adequate models are all level models (`d = 0`), so the evidence favours modelling `r_t` as highly persistent but not requiring differencing over this sample. The three strongest adequate models are:
+**Interest rates** (`r_t`): The level plot for `r_t` suggests long swings and slow adjustment rather than steady trend growth, so both stationary and differenced specifications were considered. The full grid included some differenced specifications with slightly lower AIC values, but the level models were retained for the report because they match the visual interpretation of `r_t` as highly persistent without steady growth. Among the adequate level specifications, the three strongest candidates are:
 
 | Interest rate model | AIC | BIC | Ljung-Box p-value | Selected |
 |---|---:|---:|---:|---|
@@ -70,11 +70,11 @@ All three models fit the short-run dynamics of quarterly inflation well. ARIMA(3
 | ARIMA(8,0,1) | 478.25 | 517.41 | 0.2161 | Adequate |
 | ARIMA(8,0,2) | 478.96 | 521.68 | 0.1584 | Adequate |
 
-These models all imply strong persistence in the nominal rate. ARIMA(4,0,6) is retained as the best adequate benchmark because it has the lowest AIC among the reported adequate candidates while also passing the residual test. Since the forecasting exercise in part (b) only concerns inflation, the interest-rate models are reported here to complete the model-selection exercise rather than for forecasting.
+ARIMA(4,0,6) is retained as the benchmark given its lowest AIC among adequate level candidates and clean residual diagnostics. Since part (b) only asks for inflation forecasts, the interest-rate models are included to complete the selection exercise rather than to produce their own forecast set.
 
 ### 2(b) Inflation Forecasts for 2024–2025
 
-**Figure 3: `fig2a_forecast.png`**
+**Figure 3**
 
 | Quarter | ARIMA(3,0,3) | ARIMA(1,0,6) | ARIMA(5,0,6) | 68% CI Lower | 68% CI Upper | 95% CI Lower | 95% CI Upper |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -87,23 +87,23 @@ These models all imply strong persistence in the nominal rate. ARIMA(4,0,6) is r
 | 2025Q3 | 0.008878 | 0.008419 | 0.008735 | 0.003176 | 0.014581 | −0.002360 | 0.020117 |
 | 2025Q4 | 0.008875 | 0.008482 | 0.008710 | 0.002923 | 0.014828 | −0.002857 | 0.020607 |
 
-All three models forecast quarterly inflation returning toward a similar long-run mean. ARIMA(3,0,3) stays close to 0.0088 to 0.0089, ARIMA(1,0,6) is slightly lower in the near term, and ARIMA(5,0,6) gives the lowest short-run forecasts.
+Across all three models, quarterly inflation gradually converges back toward a similar long-run mean. ARIMA(3,0,3) holds close to 0.0088–0.0089 throughout the horizon. ARIMA(1,0,6) sits a touch lower in the early quarters before converging. ARIMA(5,0,6) produces the lowest near-term forecasts of the three, though it too settles toward a similar level by 2025.
 
 ### 2(c) Policy Use and Forecast Uncertainty
 
-Forecasts of `Δp_t` are useful for policy because decisions depend on expected inflation, not just current inflation. Central banks use inflation forecasts when setting interest rates, and fiscal authorities use them when assessing real spending and debt outcomes.
+Inflation forecasts matter for policy because spending and investment decisions are made based on where prices are expected to go, not where they are today. Central banks use forward-looking inflation estimates when calibrating interest rates. Fiscal authorities need them to assess real spending levels, tax revenues, and the real burden of debt.
 
-The main source of uncertainty is innovation uncertainty: future shocks are unknown, so the predictive intervals widen with the forecast horizon. There is also model uncertainty because the three adequate specifications do not imply exactly the same forecast path, especially at short horizons. In other words, the reported intervals measure uncertainty conditional on a particular model, while the spread across the three models gives an additional sense of specification uncertainty.
+Two types of uncertainty are worth distinguishing here. Innovation uncertainty arises from unpredictable future shocks, and it is the reason forecast intervals widen as the horizon extends. Model uncertainty is separate: the three specifications do not produce identical forecasts, particularly in the near term, which shows how sensitive the path is to the choice of model. The reported confidence bands capture the first kind of uncertainty, conditional on a single model. The spread across all three models speaks more directly to the second.
 
-These forecasts also assume parameter stability: the inflation process estimated on the historical sample continues to hold out of sample. If the economy moves into a new regime, for example after a supply shock or a change in policy behaviour, realised inflation can fall outside the model-based intervals. Quantitatively, this uncertainty is summarised by the 68% and 95% forecast bands, but those bands still condition on the maintained model being the correct one.
+Beyond both of these, all forecasts assume the historical inflation process continues to hold out of sample. If the economy enters a new regime, whether through a supply disruption, a policy shift, or something else entirely, the model-based intervals may not adequately capture the true range of outcomes. The 68% and 95% bands summarise uncertainty under the assumption that the selected model remains the right one going forward, which is worth keeping in mind when interpreting them.
 
 ---
 
 ## Question 3
 
-**Figure 4: `fig3_actual_vs_forecast.png`**
+**Figures 4-6**
 
-The actual quarterly inflation rates for 2024Q1–2025Q3 are computed from the price-level data as `Δp_t = log(P_t) − log(P_{t−1})`, using `P_{2023Q4}` as the last in-sample observation.
+Actual quarterly inflation for 2024Q1–2025Q3 is computed as `Δp_t = log(P_t) − log(P_{t−1})`, anchored at `P_{2023Q4}` as the final in-sample observation.
 
 | Quarter | Actual `Δp_t` | ARIMA(3,0,3) | ARIMA(1,0,6) | ARIMA(5,0,6) |
 |---|---:|---:|---:|---:|
@@ -115,17 +115,13 @@ The actual quarterly inflation rates for 2024Q1–2025Q3 are computed from the p
 | 2025Q2 | 0.006288 | 0.008867 | 0.008348 | 0.008254 |
 | 2025Q3 | 0.006477 | 0.008878 | 0.008419 | 0.008735 |
 
-Forecast performance:
+Question 3 asks for the three inflation forecasts from Question 2 to be evaluated against the realised inflation outcomes, so Figures 4-6 and the table above compare each forecast path with the actual series.
 
-| Model | MSFE | RMSFE | MAE |
-|---|---:|---:|---:|
-| ARIMA(3,0,3) | 3.3983e−06 | 0.001843 | 0.001631 |
-| ARIMA(1,0,6) | 1.9668e−06 | 0.001402 | 0.001208 |
-| ARIMA(5,0,6) | 1.5590e−06 | 0.001249 | 0.000994 |
+All three models over-predict inflation across most of the 2024–2025Q3 window. The actual values sit below each forecast path in nearly every quarter, so all three specifications expected inflation to be both higher and more persistent than it turned out to be.
 
-ARIMA(5,0,6) performs best on all three measures. ARIMA(1,0,6) comes second, and ARIMA(3,0,3) performs worst of the three. So the model with the best out-of-sample performance is not the same as the model with the best in-sample AIC/BIC. The more important point, however, is that all three models over-predict inflation in the hold-out period.
+Among the three, ARIMA(5,0,6) tracks the actual path most closely, particularly in 2024Q3 through 2025Q2. ARIMA(1,0,6) generally comes second, while ARIMA(3,0,3) produces the highest forecasts throughout and therefore the largest errors. Notably, the specification with the strongest in-sample fit by AIC and BIC is not the one that handles the out-of-sample disinflation best.
 
-This is not mainly a fitting failure in the narrow in-sample sense. The models were adequate on the pre-2024 sample, but the disinflation after 2021 proceeded faster than these backward-looking ARIMA specifications implied. That is why all three models make forecast errors in the same direction. So the evaluation suggests a common regime or persistence error, not just poor fit from one particular specification.
+A reasonable interpretation is that inflation lost persistence after 2023 in a way the historical sample did not fully anticipate. All three models were trained on data that embedded a certain degree of inflationary momentum, and they projected that forward. The resulting errors are not scattered randomly across the models: they are systematic and shared, which points more toward a persistence problem or a mild regime change than to random model misspecification.
 
 ---
 
@@ -133,23 +129,21 @@ This is not mainly a fitting failure in the narrow in-sample sense. The models w
 
 ### 4(a) Real Interest Rate
 
-**Figure 5: `fig4a_real_rate.png`**
+**Figure 7**
 
-Following the exact wording of the question, the proxy is constructed as `rr_t = r_t − Δp_t`. Its sample mean is about 4.34, with a minimum close to 0.01 and a maximum about 15.03.
+Following the question's specification, the real rate proxy is defined as `rr_t = r_t − Δp_t`. Over the sample it has a mean of around 4.34, a minimum near 0.01, and a maximum of about 15.03.
 
-The plot suggests that this proxy is very similar to the nominal interest rate and much less stable than inflation. That follows mechanically from the definition in the assignment: `Δp_t` is small relative to `r_t`, so subtracting it changes the level only slightly. The dominant feature of `rr_t` is therefore the same long-run persistence seen in `r_t`, including the rise into the early 1980s, the decline over later decades, and the near-zero regime in the 2010s.
+The plot reveals that `rr_t` mostly tracks the nominal rate rather than inflation. Since `Δp_t` is small relative to `r_t`, subtracting it shifts the level only modestly. The same slow-moving persistence that defines `r_t` shows up here too: the proxy builds into the early 1980s, falls gradually through the following decades, and settles near zero through much of the 2010s before rising again.
 
 ### 4(b) Consumption Ratio
 
-**Figure 6: `fig4b_consumption_ratio.png`**
+**Figure 8**
 
-The dominant feature of the consumption ratio, `cy_t = C_t/Y_t`, is its persistent upward movement over the sample. The series rises from about 0.590 early in the sample to about 0.693 by 2023Q4, with only moderate short-run fluctuations around that upward path.
-
-Economically, a rising consumption ratio means consumption has grown faster than output, so a larger share of GDP is being used for household spending. The main feature of the plot is not short-run volatility but a slow rise in the consumption share.
+The consumption ratio `cy_t = C_t/Y_t` drifts upward across the sample, rising from around 0.590 in the early years to roughly 0.693 by 2023Q4. Short-run fluctuations are relatively contained. The main story is not volatility but the sustained long-run increase in consumption's share of GDP, which reflects household spending growing faster than output over the period.
 
 ### 4(c) Best Adequate ARIMA Model for the Real Rate
 
-For the proxy `rr_t = r_t − Δp_t`, the strongest adequate model in the search is a differenced ARIMA rather than a stationary level specification:
+A model search over the proxy `rr_t = r_t − Δp_t` yields a differenced specification as the preferred choice rather than a stationary level model:
 
 | Model for the real rate | AIC | BIC | Ljung-Box p-value |
 |---|---:|---:|---:|
@@ -157,11 +151,11 @@ For the proxy `rr_t = r_t − Δp_t`, the strongest adequate model in the search
 
 Key estimated coefficients include `φ₄ = 0.4564`, `φ₇ = −0.3841`, `θ₁ = 0.4736`, `θ₂ = −0.2673`, `θ₄ = −0.4045`, `θ₅ = −0.3704`, and `drift = 0.0015`.
 
-This is the best adequate model because it has the strongest information-criterion support among the adequate candidates and leaves no meaningful residual autocorrelation. It captures the dominant feature of the plot because the proxy inherits substantial low-frequency movement from the nominal interest rate. The first difference removes that slow-moving level component, while the rich ARMA structure in the differenced series captures the remaining short-run persistence and reversal. The very high Ljung-Box p-value indicates that little residual autocorrelation remains.
+This specification has the strongest information-criterion support among the adequate candidates and leaves no meaningful residual autocorrelation. The choice of `d = 1` also makes sense when looking at the plot: the proxy inherits a heavy low-frequency component from the nominal rate, and first differencing removes that slow-moving drift before the ARMA terms address the remaining short-run persistence and reversal. The very high Ljung-Box p-value reinforces that little autocorrelation is left in the residuals.
 
 ### 4(d) Best Adequate ARIMA Model for the Consumption Ratio
 
-A search over `d ∈ {0,1}` and `p, q = 0,...,6` was carried out using AIC, BIC, and residual diagnostics. Unlike the interest-rate series, the consumption ratio keeps trending upward through the sample, so differencing is the more convincing choice. The preferred model is:
+The model search covers `d ∈ {0,1}` and `p, q = 0,...,6`, evaluated on AIC, BIC, and residual diagnostics. Unlike the interest-rate proxy, the consumption ratio shows no sign of stabilising around a fixed level, which makes `d = 1` the more defensible choice. The selected model is:
 
 | Model for the consumption ratio | AIC | BIC | Ljung-Box p-value |
 |---|---:|---:|---:|
@@ -169,18 +163,21 @@ A search over `d ∈ {0,1}` and `p, q = 0,...,6` was carried out using AIC, BIC,
 
 Key estimated coefficients: `φ₁ = 0.6092`, `φ₂ = −0.5732`, `φ₃ = 0.7553`, `θ₁ = −0.8316`, `θ₂ = 0.6862`, `θ₃ = −0.8547`, `drift = 0.0003`.
 
-This is the best adequate model because it combines strong information-criterion support with adequate residual diagnostics. First differencing is appropriate here because the series does not move around one stable level. The small positive drift captures the average rise in the consumption share, while the AR and MA terms absorb short-run persistence.
+The model combines strong information-criterion support with clean residual diagnostics. The small positive drift picks up the average quarterly increase in the consumption share, while the AR and MA terms capture the remaining short-run persistence in the differenced series.
 
 ### 4(e) Policy Use
 
-A forecasting model for the real-rate proxy is useful because real rates matter more for intertemporal decisions than nominal rates do. For monetary policy, the issue is whether the policy stance is likely to remain restrictive or accommodative in real terms. The ARIMA model is useful because it captures the persistence and gradual adjustment in the proxy, which helps describe how quickly real financing conditions are changing and therefore answers the policy-use part of the question directly.
+Real rate forecasts are useful because capital allocation and borrowing decisions respond to real financing costs, not nominal ones. From a monetary policy standpoint, the question is whether real rates are moving in a restrictive or accommodative direction and how quickly. The ARIMA model captures the persistence in the proxy and can provide a guide to how gradually real financing conditions are likely to evolve.
 
-The consumption-ratio model is relevant for both monetary and fiscal policy. A rising consumption share suggests strong household demand and a lower saving rate. For fiscal policy, it helps assess how households may respond to taxes or transfers. For monetary policy, a high and rising consumption share may mean households are more sensitive to interest-rate changes.
+The consumption-ratio model is relevant to both monetary and fiscal authorities. A rising consumption share signals strong household demand and a falling saving rate. Fiscal policy makers need to account for this when modelling how households will respond to changes in taxes or transfers. On the monetary side, a high consumption share may imply greater sensitivity to interest-rate changes in aggregate demand, which would affect how much work a given rate move is likely to do.
 
 ---
+
 ## Question 5
 
 ### 5(a) Sample Variances
+
+Daily returns are constructed as `e_{j,t} = 100 × [log(E_{j,t}) − log(E_{j,t−1})]` for `j ∈ {CNY, USD, TWI, SDR}`, as required in the question.
 
 | Currency | Sample Variance |
 |---|---:|
@@ -189,17 +186,17 @@ The consumption-ratio model is relevant for both monetary and fiscal policy. A r
 | TWI | 0.2675 |
 | SDR | 0.4492 |
 
-These sample variances estimate the unconditional variances of the return series and summarise their average volatility over the full sample. A larger value implies greater average variability in returns. The ranking is `SDR > USD > CNY > TWI`, so SDR is the most volatile on average and TWI the least volatile.
+Sample variance here estimates the unconditional variance of each return series and summarises average return variability over the full sample. The ranking runs SDR > USD > CNY > TWI, making SDR the most volatile on average and TWI the least.
 
-On the evidence of the sample variances alone, the safest conclusion is that TWI returns were the smoothest over the sample, while USD and SDR returns were the most variable. It is reasonable to relate TWI's low variance to the diversification of a basket index and CNY's lower variance to a more managed exchange-rate environment, but those are interpretations rather than conclusions proven by the variance estimates themselves. What the statistics directly establish is the average volatility ranking, not its structural cause, and they do not show whether volatility is constant through time.
+Taken at face value, TWI returns were the smoothest over the period while USD and SDR were the most variable. A basket-index structure plausibly explains some of TWI's low variance through diversification, and a managed exchange-rate regime plausibly explains some of CNY's relatively contained variation, though neither of these is established by the variance estimates themselves. The statistics speak to the average volatility ranking only, not to its structural causes, and they say nothing about whether volatility was stable across the sample or concentrated in particular episodes.
 
 ### 5(b) Absolute Returns
 
-**Figure 7: `fig5b_abs_returns.png`**
+**Figure 9**
 
-The plots of `|e_{j,t}|` show clear periods of low volatility followed by periods of much higher volatility, especially around March 2020 and again in later parts of the sample. Large absolute returns tend to be followed by further large returns, while calm stretches tend to persist. This is the standard volatility-clustering pattern. The most prominent shared spike occurs at the onset of COVID-19, where all four series show an abrupt and simultaneous jump.
+The absolute-return plots for `|e_{j,t}|` show pronounced volatility clustering across all four currencies, particularly around March 2020 and in later parts of the sample. Large absolute returns tend to cluster together, as do quiet periods. All four series spike simultaneously at the onset of COVID-19, which is the most visible common feature across the plots.
 
-This pattern is inconsistent with an iid constant-variance process. If returns were iid with constant variance, the absolute-return plots would not show such persistent bursts of activity. Instead, the evidence points to time-varying conditional volatility, which is exactly the feature that GARCH-type models are designed to capture.
+This kind of clustering is not what would be expected under an iid constant-variance process. Sustained bursts of high or low activity across many consecutive observations point instead to time-varying conditional volatility, which is precisely the feature that GARCH-type models aim to capture.
 
 ---
 
@@ -207,20 +204,22 @@ This pattern is inconsistent with an iid constant-variance process. If returns w
 
 ### Testing for GARCH Effects
 
-Before fitting a variance model, the Engle ARCH LM test with 10 lags was applied to each return series to confirm that conditional variance is time-varying:
+Before fitting a variance model, the Engle ARCH LM test with 10 lags was applied to each return series:
 
 | Currency | ARCH LM Statistic | p-value | Ljung-Box on Squared Returns p-value |
 |---|---:|---:|---:|
-| CNY | 401.62 | 0.0000 | 0.0000 |
-| USD | 275.60 | 0.0000 | 0.0000 |
-| TWI | 484.45 | 0.0000 | 0.0000 |
-| SDR | 426.45 | 0.0000 | 0.0000 |
+| CNY | 401.62 | p < 1e-15 | p < 1e-15 |
+| USD | 275.60 | p < 1e-15 | p < 1e-15 |
+| TWI | 484.45 | p < 1e-15 | p < 1e-15 |
+| SDR | 426.45 | p < 1e-15 | p < 1e-15 |
 
-Both tests reject homoskedasticity overwhelmingly for every series. A constant-variance model is clearly inadequate for all four series, and GARCH-type modelling is warranted.
+Both tests reject constant variance very strongly for every series. The p-values are recorded as `p < 1e-15` because they are numerically indistinguishable from zero rather than literally equal to it. A constant-variance model is clearly not adequate for any of the four currencies, and GARCH-type modelling is well justified.
 
 ### Mean Equation Selection
 
-A small ARMA grid was estimated first for each return series to identify sensible low-order mean dynamics before modelling conditional variance jointly. For USD, TWI, and SDR the final GARCH specifications kept the same mean equations as that first-stage screen. For CNY, the final joint ARMA-GARCH estimation improved slightly when one extra MA term was included, so the final mean equation is `ARMA(2,3)` rather than the preliminary `ARMA(2,2)`.
+A small ARMA grid was estimated for each return series to pin down sensible low-order mean dynamics before the conditional variance was modelled jointly. For USD, TWI, and SDR, the mean equations from that preliminary step carried through to the final ARMA-GARCH specifications unchanged. CNY was an exception: adding one extra MA term in the joint estimation improved the fit, so the final mean equation for CNY is `ARMA(2,3)` rather than the preliminary `ARMA(2,2)`.
+
+Final mean equations:
 
 - **CNY**: `ARMA(2,3)`
 - **USD**: `ARMA(0,0)`
@@ -229,13 +228,13 @@ A small ARMA grid was estimated first for each return series to identify sensibl
 
 ### Variance Model and Error Distribution
 
-A broad range of `ARMA(p,q)-GARCH(p_sigma,q_sigma)` models was then estimated for each currency, with `p_sigma, q_sigma` allowed to range up to 4 and Normal, Student-t, and skewed-Student-t errors considered. To match the literal wording of the question as closely as possible, the final reported specifications are all symmetric `GARCH` models rather than asymmetric extensions. Model choice was based on three requirements taken together:
+A broad range of `ARMA(p,q)-GARCH(p_sigma,q_sigma)` models was estimated for each currency, allowing `p_sigma, q_sigma` up to 4 and considering Normal, Student-t, and skewed-Student-t error distributions. To remain consistent with the question's framing, all final specifications use symmetric `GARCH` rather than asymmetric extensions. Model selection balanced three criteria:
 
-- low information criteria, especially BIC;
-- no remaining serial correlation in the standardised residuals;
-- no important remaining ARCH effects in the squared standardised residuals, with a preference for models whose persistence is below one so Question 7 is well defined.
+- low information criteria, with particular weight on BIC;
+- no remaining serial correlation in standardised residuals;
+- no material remaining ARCH effects in squared standardised residuals, and persistence strictly below one so the long-run variance in Question 7 is well defined.
 
-The final models selected for Question 6 are:
+The selected models are:
 
 | Currency | Mean Model | Variance Model | Errors | AIC | BIC |
 |---|---|---|---|---:|---:|
@@ -253,11 +252,11 @@ Key estimated coefficients:
 | TWI | −0.0029 | `φ₁ = −0.0442` | none | 0.0246 | `α₁ = 0.1972` | `β₁ = 0.0897`, `β₂ = 0.1895`, `β₃ = 0.4241` |
 | SDR | −0.0050 | none | `θ₁ = −0.1911` | 0.0342 | `α₁ = 0.1305`, `α₂ = 0.0000`, `α₃ = 0.0619`, `α₄ = 0.0769` | `β₁ = 0.0000`, `β₂ = 0.0000`, `β₃ = 0.1994`, `β₄ = 0.4556` |
 
-These fitted models all imply persistent conditional volatility because the ARCH and GARCH coefficients sum to values close to one, but the persistence remains below one in every selected specification. That is important because it means the models are both dynamically rich and still admissible for long-run variance calculations in Question 7.
+Across all four currencies, the ARCH and GARCH coefficients sum to values close to one, reflecting highly persistent conditional volatility. Persistence stays below one in every case, which is what allows the long-run variance calculations in Question 7 to go through.
 
 ### Diagnostics and Volatility Plots
 
-The residual checks for the selected models are summarised below:
+Ljung-Box results for the final models:
 
 | Currency | LB on Std. Residuals | LB on Sq. Std. Residuals |
 |---|---:|---:|
@@ -266,20 +265,23 @@ The residual checks for the selected models are summarised below:
 | TWI | 0.5560 | 0.2421 |
 | SDR | 0.9189 | 0.1508 |
 
-All four models pass the Ljung-Box check on the standardised residuals, so the mean equations appear adequate. The squared-residual tests are also acceptable at the conventional 5% level for all four currencies. TWI and SDR are very comfortably adequate, and the revised CNY model is now clearly more convincing than before. USD remains the most borderline of the four under a symmetric Normal GARCH restriction: I explored heavier-tailed symmetric alternatives, but although they reduced AIC and BIC, they left much stronger residual ARCH effects. I also checked asymmetric specifications such as `gjrGARCH`, which improved the USD diagnostics further, but I have not reported them because the question is worded specifically in terms of `ARMA-GARCH`. So, answering the question directly, the reported set above is my final set of best adequate `ARMA-GARCH` models, with `ARMA(0,0)-GARCH(3,3)` retained as the best defensible USD choice under that literal restriction.
+All four models pass the Ljung-Box check on standardised residuals, indicating adequate mean equations. The squared-residual tests also pass at the 5% level for all currencies. TWI and SDR clear both comfortably, and the revised CNY specification performs better than earlier iterations. USD remains the most borderline case under the symmetric Normal GARCH constraint. Heavier-tailed symmetric alternatives were considered, but despite better information criteria they left noticeably stronger ARCH effects in the residuals. Asymmetric specifications like `gjrGARCH` improved the USD diagnostics further, but are not reported given the question is framed specifically around `ARMA-GARCH`. Under that constraint, `ARMA(0,0)-GARCH(3,3)` remains the most defensible USD choice.
 
-**Figures 8–11: `fig6_vol_CNY.png`, `fig6_vol_USD.png`, `fig6_vol_TWI.png`, `fig6_vol_SDR.png`**
+Accordingly, the four specifications reported above are the final set of best adequate symmetric `ARMA-GARCH` models for Question 6.
 
-All four conditional volatility series spike sharply during the COVID-19 episode in March 2020, then gradually decay. The TWI series is visibly the smoothest and least reactive, while USD and SDR show the largest and most persistent volatility bursts. This aligns well with the sample-variance evidence in Question 5 and supports the view that TWI is the most stable of the four exchange-rate return series.
+**Figures 10-13**
+
+All four conditional volatility series spike sharply around the COVID-19 shock in March 2020 and then decay slowly. TWI is the smoothest and least reactive throughout, while USD and SDR show the largest and most prolonged volatility bursts. This is consistent with the sample-variance evidence from Question 5 and reinforces the view that TWI is the most stable of the four return series.
 
 ---
+
 ## Question 7
 
-For the symmetric GARCH models selected in Question 6, the unconditional variance exists when:
+For the symmetric GARCH models from Question 6, the unconditional variance exists when:
 
 `sum alpha_i + sum beta_i < 1`
 
-When that condition holds, the unconditional variance is:
+When that condition holds, the unconditional variance is given by:
 
 `sigma_j^2 = omega / (1 - sum alpha_i - sum beta_i)`
 
@@ -292,15 +294,15 @@ Applying this to each fitted model:
 | TWI | 0.9005 | 0.2476 | 0.2675 | 0.9258 |
 | SDR | 0.9243 | 0.4526 | 0.4492 | 1.0076 |
 
-All four persistence measures are below 1, so finite unconditional variances exist for every currency. The persistence values are still high, especially for USD and SDR, so volatility shocks decay slowly even though the long-run variance is well defined.
+Persistence is below one in all four cases, so each currency has a finite unconditional variance. The values are still high, especially for USD and SDR, meaning volatility shocks take quite a while to decay even though the long-run variance is well defined.
 
-Comparing these model-implied variances with the sample variances from Question 5 gives a useful diagnostic. For CNY and TWI, the unconditional variance is lower than the raw sample variance, which is consistent with the sample being lifted by temporary stress episodes. For USD and SDR, the model-implied and sample variances are almost identical, which suggests the estimated GARCH dynamics reproduce their average volatility very closely. The broad ranking is unchanged: TWI remains the least volatile series, while USD and SDR remain the most volatile.
+Comparing the model-implied variances with the sample variances from Question 5 gives a useful cross-check. For CNY and TWI, the GARCH-implied variance comes in below the raw sample figure, which is consistent with stress episodes temporarily inflating observed variability. For USD and SDR the two numbers are nearly identical, suggesting the GARCH dynamics closely replicate average volatility for those currencies. The volatility ranking from Question 5 is unchanged: TWI is still the least volatile series and USD and SDR the most volatile.
 
 ---
 
 ## Question 8
 
-The probability that the daily return falls below the threshold of 0.01% on 13/01/2026 and 14/01/2026 is computed from the one-step-ahead and two-step-ahead forecasts of the final ARMA-GARCH models selected in Question 6. Returns are defined as `e_{j,t} = 100 × log(S_{j,t} / S_{j,t−1})`, so they are already expressed in percentage units, and the threshold 0.01% corresponds directly to the value 0.01 in those units. Because all four final models are estimated under Normal errors, the Normal CDF is used here.
+The probability that the daily return falls below 0.01% on 13/01/2026 and 14/01/2026 is computed from the one-step-ahead and two-step-ahead conditional forecasts of the ARMA-GARCH models selected in Question 6. Returns are defined as `e_{j,t} = 100 × log(S_{j,t} / S_{j,t−1})`, placing them directly in percentage units, so the threshold of 0.01% corresponds to the value 0.01. All four models use Normal errors, so the Normal CDF applies.
 
 | Currency | `μ_{T+1}` | `σ_{T+1}` | P(e < 0.01), 13 Jan | `μ_{T+2}` | `σ_{T+2}` | P(e < 0.01), 14 Jan |
 |---|---:|---:|---:|---:|---:|---:|
@@ -309,8 +311,8 @@ The probability that the daily return falls below the threshold of 0.01% on 13/0
 | TWI | −0.0030 | 0.3953 | 0.5131 | −0.0029 | 0.4221 | 0.5122 |
 | SDR | −0.0190 | 0.4939 | 0.5234 | −0.0050 | 0.4892 | 0.5122 |
 
-All probabilities remain above 0.5 because the threshold is close to zero and the forecast means are negative in every case. When the conditional mean lies below zero, more than half of the Normal forecast distribution will fall below a threshold such as 0.01%.
+Every probability exceeds 0.5. This follows directly from the structure of the calculation: the threshold is close to zero and the conditional mean is negative for all four currencies on both days. When the forecast mean sits below zero, the majority of the Normal distribution falls below a near-zero threshold by construction.
 
-A lower probability is preferable from a downside-risk perspective, since it means a smaller chance of earning less than the 0.01% threshold. On **13 January 2026**, the ranking from least to most downside risk is CNY (0.5128), TWI (0.5131), USD (0.5172), SDR (0.5234). On **14 January 2026**, the ranking is CNY (0.5108), TWI (0.5122), SDR (0.5122, marginally above TWI at full precision), USD (0.5160).
+From a downside-risk perspective, a lower probability is preferable because it indicates a smaller chance of earning below the 0.01% threshold. On **13 January 2026**, the ranking from lowest to highest downside risk is CNY (0.5128), TWI (0.5131), USD (0.5172), SDR (0.5234). On **14 January 2026**, it becomes CNY (0.5108), TWI (0.5122), SDR (0.5122, marginally above TWI at full precision), USD (0.5160).
 
-This ranking depends on both the conditional mean and the conditional volatility. The revised CNY model now produces the smallest downside-risk probability on both dates because its forecast mean is closer to zero than before while its forecast volatility remains moderate relative to USD and SDR. TWI still looks attractive because it has the lowest volatility, but CNY edges it out once the full forecast distribution is used. The investment implication is that a risk-averse investor who wants to minimise the probability of falling below 0.01% would choose **CNY for both 13 January 2026 and 14 January 2026**. This also shows why conditional risk measures are more informative than unconditional sample variances alone: the preferred asset depends on the joint behaviour of the conditional mean and conditional variance, not just on average sample volatility.
+CNY leads on both dates. Its forecast mean is closer to zero than the others, and its conditional volatility stays moderate relative to USD and SDR. TWI remains attractive given its low volatility, but the full forecast distribution gives CNY the edge. The implication for a risk-averse investor seeking to minimise the probability of falling below 0.01% is clear: **CNY is the preferred currency for both dates**. More broadly, this illustrates why conditional risk measures carry more information than unconditional variance summaries. The preferred asset is determined by the joint behaviour of the forecast mean and forecast variance, not by average sample volatility alone.
