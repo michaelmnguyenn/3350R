@@ -2,8 +2,6 @@ rm(list = ls())
 library(readxl)
 library(forecast)
 library(tseries)
-library(urca)
-
 setwd("/Users/michael/Downloads/ECON3350")
 
 df <- read_excel("MacroData (1).xlsx", sheet = "data")
@@ -34,31 +32,20 @@ rr <- ts(na.omit(df$rr), start = c(1959, 2), frequency = 4)
 cat(sprintf("rr_t: n=%d  mean=%.4f  min=%.4f  max=%.4f\n",
             length(rr), mean(rr), min(rr), max(rr)))
 
-# --- ADF (standard, for reference) ---
+# --- ADF test ---
 # H0: unit root.  tseries::adf.test includes a trend term; lag = floor((n-1)^1/3) = 6.
-cat("\n=== ADF test on rr_t (standard, with trend) ===\n")
+cat("\n=== ADF test on rr_t ===\n")
 adf_rr <- adf.test(rr)
 print(adf_rr)
 # Result: stat=-2.981, p=0.163 — fails to reject at 5%.
-# NOTE: including a trend is inappropriate for real interest rates (no theory for trend).
-
-# --- DF-GLS (Elliott, Rothenberg, Stock 1996) ---
-# More powerful than ADF: GLS detrending under H1 removes the trend/drift before testing.
-# H0: unit root.  model="constant" = drift only (correct for rr_t).
-cat("\n=== DF-GLS test on rr_t ===\n")
-dfgls_rr <- ur.ers(rr, type = "DF-GLS", model = "constant", lag.max = 6)
-summary(dfgls_rr)
-# stat = -2.249, 5% critical = -1.94  → REJECT at 5%
-
-# ── Decision: d = 0 ─────────────────────────────────────────────────────────
-# DF-GLS: stat=-2.249 < 5% critical -1.94 → reject unit root at 5%.
-# Justification:
-#  1. DF-GLS is specifically designed to improve power of ADF against near-I(0).
-#     Standard ADF fails (low power) because it includes a trend and uses OLS detrending.
-#  2. Fisher hypothesis: rr_t = r_t - 100*dpt is theoretically I(0) (cointegrating residual).
+# NOTE: Including a trend is technically inappropriate for rr_t (no economic reason
+#       for a deterministic trend in real rates), which likely inflates the p-value.
+#       Despite failing to formally reject, d = 0 is supported by:
+#  1. Fisher hypothesis: rr_t = r_t - 100*dpt is theoretically I(0) (cointegrating residual).
 #     A unit root would imply ever-drifting real rates, contradicting monetary equilibrium.
-#  3. Plot confirms rr_t oscillates around ~3.4% with no secular drift.
-cat("\nDecision: d = 0  (DF-GLS rejects unit root at 5%; Fisher hypothesis confirms I(0)).\n\n")
+#  2. Plot confirms rr_t oscillates around ~3.4% with no secular drift.
+#  3. ADF has known low power against persistent but stationary alternatives.
+cat("\nDecision: d = 0  (ADF borderline; Fisher hypothesis and visual inspection support I(0)).\n\n")
 
 # ACF / PACF
 par(mfrow = c(1, 2))

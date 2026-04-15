@@ -121,7 +121,7 @@ The three models' forecasts were then plotted against the actual holdout inflati
 
 **Figure 4: Actual inflation and ARIMA model forecasts over the holdout period (2024Q1 to 2025Q3)** `fig3_actual_vs_arima_2_0_10.png` `fig3_actual_vs_arima_4_0_9.png` `fig3_actual_vs_arima_2_0_9.png`
 
-All three models overestimated inflation across most of the 2024–2025Q3 holdout period. Actual inflation falls from approximately 0.829% per quarter in 2024Q2 to roughly 0.643% by 2025Q3, while all three models project a path that remains above the realised values from 2024Q2 onwards.
+All three models show a two-phase pattern across the holdout. In the first phase (2024Q2–2025Q1), all three models underestimated inflation — actual quarterly inflation remained higher than projected, reaching 0.829% in 2024Q2 while all forecasts had already declined toward 0.65–0.72%. This reflects the models failing to capture the continued persistence of post-pandemic price pressures through 2024. In the second phase (2025Q2–2025Q3), actual inflation fell more sharply to around 0.63–0.64%, while all three forecasts rose toward 0.68–0.81%, resulting in overestimation. The models projected a mean-reverting rise back toward the historical average that did not materialise.
 
 Out of the three models, ARIMA(2,0,9)'s forecast was closest to the actual holdout values, with RMSFE = 0.000582 and MAE = 0.000494. In contrast, ARIMA(4,0,9) had the largest error (RMSFE = 0.001030), while ARIMA(2,0,10) sat between the two.
 
@@ -131,7 +131,7 @@ Out of the three models, ARIMA(2,0,9)'s forecast was closest to the actual holdo
 | ARIMA(4,0,9)   | 1.06×10⁻⁶  | 0.001030 | 0.000884 |
 | ARIMA(2,0,9)   | 3.39×10⁻⁷  | 0.000582 | 0.000494 |
 
-Overall, this shows that all three models expected inflation to be more persistent than it actually was. It suggests that the overprediction issue reflects a genuine broader shift towards lower inflation in 2024–2025, driven by the lagged effects of Federal Reserve rate hikes, which no backward-looking ARIMA model can anticipate.
+Overall, this shows that the models struggled to track both the lingering above-target inflation of 2024 and its subsequent faster-than-expected decline. This pattern is consistent with non-linear disinflation dynamics driven by the lagged transmission of Federal Reserve rate hikes, which no backward-looking ARIMA model can anticipate.
 
 ---
 
@@ -161,7 +161,7 @@ The main feature of the data is a long-run upward drift. Figure 6 shows `cy_t` r
 
 ### 4c)
 
-For the real interest rate, ARIMA models were searched over `p, q ∈ {0, ..., 10}` and `d ∈ {0, 1}`, with and without deterministic terms. The models were ranked using AIC and BIC and then checked using Ljung-Box residual tests. The choice of `d = 0` is motivated by the DF-GLS test (Elliott, Rothenberg and Stock, 1996), which uses GLS detrending to improve power against near-unit-root alternatives. With `model = "constant"` and `lag.max = 6`, the test statistic is −2.249 against a 5% critical value of −1.94, formally rejecting the unit root null at the 5% level. The Fisher hypothesis further supports `d = 0`: as `rr_t = r_t − 100·Δp_t` is a linear combination of two series sharing a common stochastic trend, it forms a cointegrating residual that is theoretically I(0).
+For the real interest rate, ARIMA models were searched over `p, q ∈ {0, ..., 10}` and `d ∈ {0, 1}`, with and without deterministic terms. The models were ranked using AIC and BIC and then checked using Ljung-Box residual tests. The ADF test (Dickey-Fuller with lag order 6) gives a test statistic of −2.981 with p-value of 0.163, failing to formally reject the unit root null at the 5% level. However, this result is not decisive: `tseries::adf.test` includes a deterministic trend by default, which is theoretically inappropriate for real interest rates since there is no economic reason for `rr_t` to trend. Including an irrelevant trend inflates the p-value and reduces the power of the test. The choice of `d = 0` is instead supported by the Fisher hypothesis: `rr_t = r_t − 100·Δp_t` is a linear combination of two series sharing a common stochastic trend, forming a cointegrating residual that is theoretically I(0). Furthermore, the plot shows `rr_t` oscillating around a stable positive mean of approximately 3.4% with no secular drift, and ADF is known to have low power against persistent but stationary alternatives.
 
 | Model         | d | AIC    | BIC    | Ljung-Box p-value |
 |--------------|---|--------|--------|------------------|

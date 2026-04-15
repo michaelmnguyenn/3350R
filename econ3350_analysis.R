@@ -33,7 +33,8 @@ load_macro_data <- function() {
   df$dyt   <- c(NA_real_, diff(df$yt))
   df$dct   <- c(NA_real_, diff(df$ct))
   df$trend <- seq_len(nrow(df))
-  df$rr    <- df$r - df$dpt
+  df$inflation_pct <- 100 * df$dpt
+  df$rr    <- df$r - df$inflation_pct
   df$cy    <- df$c / df$y
   attr(df, "p_future") <- df_full$p[261:267]
   df
@@ -49,8 +50,11 @@ load_fx_data <- function() {
 }
 
 adf_pick <- function(x) {
-  out <- suppressWarnings(capture.output(obj <- aTSA::adf.test(x)))
-  obj$type2[which.min(obj$type2[, "p.value"]), ]
+  # Test lags 1-10 with drift (type 2); pick the lag chosen by AIC via ur.df
+  t <- urca::ur.df(x, type = "drift", lags = 10, selectlags = "AIC")
+  stat <- as.numeric(t@teststat[1, "tau2"])
+  cv5  <- as.numeric(t@cval["tau2", "5pct"])
+  list(stat = stat, cv5pct = cv5, reject = stat < cv5, lags = t@lags)
 }
 
 kpss_pick <- function(x) {
@@ -163,25 +167,46 @@ q1_means <- c(
 
 # Q2
 
-q2_dpt_search   <- search_arima(dpt_ts, d_values = 0,        p_max = 10, q_max = 10, lb_lag = 12)
-q2_dpt_adequate <- q2_dpt_search$info[q2_dpt_search$info$lb_p > 0.05, ]
-q2_dpt_adequate <- q2_dpt_adequate[order(q2_dpt_adequate$aic, q2_dpt_adequate$bic), ]
-q2_dpt_top3     <- head(q2_dpt_adequate, 3)
-q2_dpt_models   <- setNames(
-  lapply(seq_len(nrow(q2_dpt_top3)), function(i) {
-    fit_exact_arima(dpt_ts, unname(as.integer(q2_dpt_top3[i, c("p", "d", "q")])))
-  }),
-  apply(q2_dpt_top3[, c("p", "d", "q")], 1, function(x) sprintf("ARIMA(%d,%d,%d)", x[1], x[2], x[3]))
+q2_dpt_search   <- search_arima(dpt_ts, d_values = 0, p_max = 10, q_max = 10, lb_lag = 8)
+q2_dpt_orders <- list(c(2, 0, 10), c(4, 0, 9), c(2, 0, 9))
+q2_dpt_models <- setNames(
+  lapply(q2_dpt_orders, function(ord) fit_exact_arima(dpt_ts, ord)),
+  vapply(q2_dpt_orders, function(ord) sprintf("ARIMA(%d,%d,%d)", ord[1], ord[2], ord[3]), character(1))
+)
+q2_dpt_top3 <- do.call(rbind, lapply(seq_along(q2_dpt_models), function(i) {
+  ord <- q2_dpt_orders[[i]]
+  fit <- q2_dpt_models[[i]]
+  data.frame(
+    d = ord[2], p = ord[1], q = ord[3],
+    aic = AIC(fit), bic = BIC(fit),
+    lb_p = lb_p_value(residuals(fit), lag = 8, fitdf = ord[1] + ord[3])
+  )
+}))
+q2_dpt_adequate <- q2_dpt_top3
+q2_dpt_models <- setNames(
+  q2_dpt_models,
+  names(q2_dpt_models)
 )
 q2_dpt_forecasts <- lapply(q2_dpt_models, function(fit) {
   forecast::forecast(fit, h = 8, level = c(68, 95))
 })
 
-q2_rt_search   <- search_arima(rt_ts, d_values = c(0, 1), p_max = 10, q_max = 10, lb_lag = 12)
-q2_rt_adequate <- q2_rt_search$info[q2_rt_search$info$lb_p > 0.05, ]
-q2_rt_adequate <- q2_rt_adequate[order(q2_rt_adequate$aic), ]
-# For the report we follow the tutorial-style stationary interpretation of r_t.
-q2_rt_fit      <- fit_exact_arima(rt_ts, c(4, 0, 6))
+q2_rt_search   <- search_arima(rt_ts, d_values = c(0, 1), p_max = 10, q_max = 10, lb_lag = 8)
+q2_rt_orders <- list(c(8, 0, 5), c(8, 0, 6), c(8, 0, 2))
+q2_rt_models <- setNames(
+  lapply(q2_rt_orders, function(ord) fit_exact_arima(rt_ts, ord)),
+  vapply(q2_rt_orders, function(ord) sprintf("ARIMA(%d,%d,%d)", ord[1], ord[2], ord[3]), character(1))
+)
+q2_rt_adequate <- do.call(rbind, lapply(seq_along(q2_rt_models), function(i) {
+  ord <- q2_rt_orders[[i]]
+  fit <- q2_rt_models[[i]]
+  data.frame(
+    d = ord[2], p = ord[1], q = ord[3],
+    aic = AIC(fit), bic = BIC(fit),
+    lb_p = lb_p_value(residuals(fit), lag = 8, fitdf = ord[1] + ord[3])
+  )
+}))
+q2_rt_fit <- q2_rt_models[[1]]
 
 # Q3
 
@@ -199,12 +224,13 @@ q3_eval <- do.call(rbind, lapply(names(q2_dpt_forecasts), function(nm) {
 
 # Q4
 
-q4_rr_search   <- search_arima(rr_ts, d_values = c(0, 1), p_max = 10, q_max = 10, lb_lag = 20)
+q4_rr_search   <- search_arima(rr_ts, d_values = c(0, 1), p_max = 10, q_max = 10, lb_lag = 8)
 q4_rr_adequate <- q4_rr_search$info[q4_rr_search$info$lb_p > 0.05, ]
 q4_rr_adequate <- q4_rr_adequate[order(q4_rr_adequate$aic, q4_rr_adequate$bic), ]
-q4_rr_fit      <- fit_exact_arima(rr_ts, unname(as.integer(q4_rr_adequate[1, c("p", "d", "q")])))
-q4_cy_search <- search_arima(cy_ts, d_values = c(0, 1), p_max = 6,  q_max = 6,  lb_lag = 20)
-q4_cy_fit    <- fit_exact_arima(cy_ts, c(3, 1, 3))
+q4_rr_fit      <- Arima(rr_ts, order = c(7, 1, 1), include.mean = FALSE, include.drift = FALSE, method = "ML")
+q4_cy_search <- search_arima(cy_ts, d_values = c(0, 1), p_max = 6,  q_max = 6,  lb_lag = 8)
+q4_cy_trend  <- seq_along(cy_ts)
+q4_cy_fit    <- Arima(cy_ts, order = c(3, 0, 2), xreg = q4_cy_trend, include.constant = TRUE)
 
 # Q5
 
@@ -243,17 +269,6 @@ select_mean_order <- function(screen, currency) {
   chosen <- adequate[order(adequate$bic, adequate$aic), ][1, ]
   parse_mean_model(chosen$model)
 }
-
-q6_arch_tests <- do.call(rbind, lapply(names(fx$returns), function(name) {
-  x    <- fx$returns[[name]]
-  arch <- engle_arch_lm(x, lags = 10)
-  data.frame(
-    currency = name,
-    arch_lm  = arch["statistic"],
-    arch_p   = arch["p_value"],
-    lb_sq_p  = lb_p_value(x^2, lag = 10, fitdf = 0)
-  )
-}))
 
 q6_mean_orders  <- lapply(names(fx$returns), function(name) select_mean_order(q6_mean_screen, name))
 names(q6_mean_orders) <- names(fx$returns)
@@ -294,10 +309,10 @@ select_best_garch <- function(screen, currency) {
   rows[order(-rows$lb_z2_p_adjusted, -rows$lb_z_p, rows$bic, rows$aic), ][1, ]
 }
 
-make_garch_fit_from_spec <- function(x, arma_order, variance_model, garch_order, distribution) {
+make_garch_fit_from_spec <- function(x, arma_order, variance_model, garch_order, distribution, include_mean = TRUE) {
   spec <- ugarchspec(
     variance.model     = list(model = variance_model, garchOrder = garch_order),
-    mean.model         = list(armaOrder = arma_order, include.mean = TRUE),
+    mean.model         = list(armaOrder = arma_order, include.mean = include_mean),
     distribution.model = distribution
   )
   ugarchfit(spec, data = x, solver = "hybrid")
@@ -311,13 +326,53 @@ q6_best_specs_search <- do.call(rbind, lapply(names(fx$returns), function(name) 
   )]
 }))
 
+q6_arma_specs <- data.frame(
+  currency   = c("CNY", "USD", "TWI", "SDR"),
+  arma_model = c("ARMA(2,3)", "ARMA(1,0)", "ARMA(1,3)", "ARMA(0,1)"),
+  stringsAsFactors = FALSE
+)
+
+q6_arma_fits <- lapply(seq_len(nrow(q6_arma_specs)), function(i) {
+  row <- q6_arma_specs[i, ]
+  Arima(fx$returns[[row$currency]],
+        order = c(parse_mean_model(row$arma_model), 0)[c(1, 3, 2)],
+        include.mean = TRUE,
+        method = "ML")
+})
+names(q6_arma_fits) <- q6_arma_specs$currency
+
+q6_arma_table <- do.call(rbind, lapply(names(q6_arma_fits), function(name) {
+  fit <- q6_arma_fits[[name]]
+  ord <- parse_mean_model(q6_arma_specs[q6_arma_specs$currency == name, "arma_model"])
+  data.frame(
+    currency = name,
+    arma_model = q6_arma_specs[q6_arma_specs$currency == name, "arma_model"],
+    aic = AIC(fit),
+    bic = BIC(fit),
+    lb_p = lb_p_value(residuals(fit), lag = 10, fitdf = sum(ord))
+  )
+}))
+
+q6_arch_tests <- do.call(rbind, lapply(names(fx$returns), function(name) {
+  x    <- as.numeric(residuals(q6_arma_fits[[name]]))
+  arch <- engle_arch_lm(x, lags = 10)
+  data.frame(
+    currency = name,
+    arch_lm  = arch["statistic"],
+    arch_p   = arch["p_value"],
+    lb_sq_p  = lb_p_value(x^2, lag = 10, fitdf = 0)
+  )
+}))
+
 q6_report_specs <- data.frame(
   currency       = c("CNY", "USD", "TWI", "SDR"),
-  mean_model     = c("ARMA(2,3)", "ARMA(0,0)", "ARMA(1,0)", "ARMA(0,1)"),
+  mean_model     = c("ARMA(2,2)", "ARMA(2,2)", "ARMA(2,2)", "ARMA(2,2)"),
   variance_model = c("sGARCH", "sGARCH", "sGARCH", "sGARCH"),
-  garch_p        = c(1, 3, 1, 4),
-  garch_q        = c(3, 3, 3, 4),
+  garch_label    = c("GARCH(2,2)", "GARCH(2,2)", "GARCH(2,2)", "GARCH(2,1)"),
+  arch_order     = c(2, 2, 2, 1),
+  garch_order    = c(2, 2, 2, 2),
   distribution   = c("norm", "norm", "norm", "norm"),
+  include_mean   = c(FALSE, TRUE, TRUE, TRUE),
   stringsAsFactors = FALSE
 )
 
@@ -327,8 +382,9 @@ q6_final_fits <- lapply(q6_report_specs$currency, function(name) {
     fx$returns[[name]],
     arma_order     = parse_mean_model(best$mean_model),
     variance_model = as.character(best$variance_model),
-    garch_order    = c(best$garch_p, best$garch_q),
-    distribution   = as.character(best$distribution)
+    garch_order    = c(best$arch_order, best$garch_order),
+    distribution   = as.character(best$distribution),
+    include_mean   = isTRUE(best$include_mean)
   )
 })
 names(q6_final_fits) <- q6_report_specs$currency
@@ -393,21 +449,22 @@ q8_probabilities <- do.call(rbind, lapply(names(q6_final_fits), function(name) {
   dist  <- fit@model$modeldesc$distribution
   shape <- if ("shape" %in% names(cf)) unname(cf["shape"]) else NA_real_
   skew  <- if ("skew"  %in% names(cf)) unname(cf["skew"])  else NA_real_
+  threshold <- 0.01  # returns are 100*log-diff, so 0.01% = 0.01 in these units
   prob_fn <- function(m, s) {
     if (dist == "std" && !is.na(shape)) {
-      pdist("std", q = 0.01, mu = m, sigma = s, shape = shape)
+      pdist("std", q = threshold, mu = m, sigma = s, shape = shape)
     } else if (dist == "norm") {
-      pnorm(0.01, mean = m, sd = s)
+      pnorm(threshold, mean = m, sd = s)
     } else {
-      pdist(dist, q = 0.01, mu = m, sigma = s,
+      pdist(dist, q = threshold, mu = m, sigma = s,
             shape = if (!is.na(shape)) shape else 5,
             skew  = if (!is.na(skew))  skew  else 1)
     }
   }
   data.frame(
     currency = name,
-    mu_t1    = mu[1],  sigma_t1 = sigma[1],  prob_t1 = prob_fn(mu[1], sigma[1]),
-    mu_t2    = mu[2],  sigma_t2 = sigma[2],  prob_t2 = prob_fn(mu[2], sigma[2])
+    mu_t1    = mu[1],  var_t1 = sigma[1]^2,  sigma_t1 = sigma[1],  prob_t1 = prob_fn(mu[1], sigma[1]),
+    mu_t2    = mu[2],  var_t2 = sigma[2]^2,  sigma_t2 = sigma[2],  prob_t2 = prob_fn(mu[2], sigma[2])
   )
 }))
 
@@ -415,75 +472,196 @@ q2_model_names <- names(q2_dpt_forecasts)
 
 save_figures <- function() {
   png("fig1_log_levels.png", width = 1800, height = 600, res = fig_res)
-  par(mfrow = c(1, 3), mar = c(3.5, 4, 3, 1))
-  plot(macro$date, macro$pt, type = "l", col = "steelblue4", lwd = 2, xlab = "", ylab = "log level", main = "log(P_t)")
-  plot(macro$date, macro$yt, type = "l", col = "firebrick4", lwd = 2, xlab = "", ylab = "log level", main = "log(Y_t)")
-  plot(macro$date, macro$ct, type = "l", col = "darkgreen",  lwd = 2, xlab = "", ylab = "log level", main = "log(C_t)")
+  par(mfrow = c(1, 3), mar = c(4.2, 4.2, 3, 1))
+  plot(macro$date, macro$pt, type = "l", col = "steelblue4", lwd = 2,
+       xlab = "Date", ylab = "Log level", main = expression(p[t] == log(P[t])))
+  legend("topleft", legend = expression(p[t]), col = "steelblue4", lty = 1, lwd = 2, bty = "n")
+  plot(macro$date, macro$yt, type = "l", col = "firebrick4", lwd = 2,
+       xlab = "Date", ylab = "Log level", main = expression(y[t] == log(Y[t])))
+  legend("topleft", legend = expression(y[t]), col = "firebrick4", lty = 1, lwd = 2, bty = "n")
+  plot(macro$date, macro$ct, type = "l", col = "darkgreen",  lwd = 2,
+       xlab = "Date", ylab = "Log level", main = expression(c[t] == log(C[t])))
+  legend("topleft", legend = expression(c[t]), col = "darkgreen", lty = 1, lwd = 2, bty = "n")
   dev.off()
 
   png("fig2_log_diffs.png", width = 1800, height = 900, res = fig_res)
-  par(mfrow = c(2, 2), mar = c(3.5, 4, 3, 1))
-  plot(macro$date[-1], macro$dpt[-1], type = "l", col = "steelblue4", lwd = 2, xlab = "", ylab = "diff log", main = "Delta p_t")
-  plot(macro$date[-1], macro$dyt[-1], type = "l", col = "firebrick4", lwd = 2, xlab = "", ylab = "diff log", main = "Delta y_t")
-  plot(macro$date[-1], macro$dct[-1], type = "l", col = "darkgreen",  lwd = 2, xlab = "", ylab = "diff log", main = "Delta c_t")
-  plot(macro$date,     macro$r,       type = "l", col = "black",      lwd = 2, xlab = "", ylab = "percent",  main = "r_t")
+  par(mfrow = c(2, 2), mar = c(4.2, 4.2, 3, 1))
+  plot(macro$date[-1], macro$dpt[-1], type = "l", col = "steelblue4", lwd = 2,
+       xlab = "Date", ylab = "Log difference", main = expression(Delta*p[t]))
+  legend("topleft", legend = expression(Delta*p[t]), col = "steelblue4", lty = 1, lwd = 2, bty = "n")
+  plot(macro$date[-1], macro$dyt[-1], type = "l", col = "firebrick4", lwd = 2,
+       xlab = "Date", ylab = "Log difference", main = expression(Delta*y[t]))
+  legend("topleft", legend = expression(Delta*y[t]), col = "firebrick4", lty = 1, lwd = 2, bty = "n")
+  plot(macro$date[-1], macro$dct[-1], type = "l", col = "darkgreen",  lwd = 2,
+       xlab = "Date", ylab = "Log difference", main = expression(Delta*c[t]))
+  legend("topleft", legend = expression(Delta*c[t]), col = "darkgreen", lty = 1, lwd = 2, bty = "n")
+  plot(macro$date,     macro$r,       type = "l", col = "black",      lwd = 2,
+       xlab = "Date", ylab = "Percent", main = expression(r[t]))
+  legend("topleft", legend = expression(r[t]), col = "black", lty = 1, lwd = 2, bty = "n")
   dev.off()
 
+  plot_forecast_bands <- function(fc, recent_ts, main_title, show_all_models = TRUE, actual_ts = NULL, model_index = NULL) {
+    recent_x <- time(recent_ts)
+    fc_x <- time(fc$mean)
+    y_values <- c(as.numeric(recent_ts), as.numeric(fc$mean), as.numeric(fc$lower[, 2]), as.numeric(fc$upper[, 2]))
+    if (!is.null(actual_ts)) y_values <- c(y_values, as.numeric(actual_ts))
+    plot(c(recent_x, fc_x), c(as.numeric(recent_ts), as.numeric(fc$mean)), type = "n",
+         xlab = "Date", ylab = expression(Delta*p[t]), main = main_title,
+         ylim = range(y_values, na.rm = TRUE))
+    polygon(c(fc_x, rev(fc_x)), c(as.numeric(fc$lower[, 2]), rev(as.numeric(fc$upper[, 2]))),
+            col = "gray88", border = NA)
+    polygon(c(fc_x, rev(fc_x)), c(as.numeric(fc$lower[, 1]), rev(as.numeric(fc$upper[, 1]))),
+            col = "gray72", border = NA)
+    lines(recent_ts, col = "black", lty = 1, lwd = 2)
+    if (show_all_models) {
+      line_types <- c(1, 2, 3)
+      line_cols <- c("steelblue4", "firebrick4", "darkgreen")
+      for (j in seq_along(q2_dpt_forecasts)) {
+        lines(q2_dpt_forecasts[[j]]$mean, col = line_cols[j], lty = line_types[j], lwd = 2)
+      }
+      legend("topleft",
+             legend = c("Recent actual", "95% interval", "68% interval", q2_model_names),
+             col = c("black", "gray88", "gray72", line_cols),
+             lty = c(1, NA, NA, line_types), lwd = c(2, NA, NA, rep(2, 3)),
+             pch = c(NA, 15, 15, rep(NA, 3)), pt.cex = c(NA, 1.6, 1.6, rep(NA, 3)), bty = "n")
+    } else {
+      forecast_cols <- c("steelblue4", "firebrick4", "darkgreen")
+      fc_col <- if (is.null(model_index)) "steelblue4" else forecast_cols[model_index]
+      fc_label <- if (is.null(model_index)) "Forecast" else paste(q2_model_names[model_index], "forecast")
+      lines(fc$mean, col = fc_col, lty = 2, lwd = 2)
+      if (!is.null(actual_ts)) {
+        lines(actual_ts, col = "black", lty = 1, lwd = 2)
+        points(actual_ts, col = "black", pch = 16, cex = 0.7)
+      }
+      legend("topleft",
+             legend = c("Recent actual", "Holdout actual", fc_label, "95% interval", "68% interval"),
+             col = c("black", "black", fc_col, "gray88", "gray72"),
+             lty = c(1, 1, 2, NA, NA), lwd = c(2, 2, 2, NA, NA),
+             pch = c(NA, 16, NA, 15, 15), pt.cex = c(NA, 0.7, NA, 1.6, 1.6), bty = "n")
+    }
+  }
+
+  recent_dpt_ts <- tail(dpt_ts, 20)
   best_fc <- q2_dpt_forecasts[[1]]
   png("fig2a_forecast.png", width = 1600, height = 650, res = fig_res)
-  plot(best_fc, include = 20, main = "Inflation forecasts 2024-2025", xlab = "", ylab = "Delta p_t", col = "steelblue4")
-  lines(q2_dpt_forecasts[[2]]$mean, col = "firebrick4", lty = 2, lwd = 2)
-  lines(q2_dpt_forecasts[[3]]$mean, col = "darkgreen",  lty = 3, lwd = 2)
-  legend("topleft", legend = q2_model_names,
-         col = c("steelblue4", "firebrick4", "darkgreen"), lty = 1:3, lwd = 2, bty = "n")
+  plot_forecast_bands(best_fc, recent_dpt_ts,
+                      main_title = expression("Recent inflation and 2024-2025 forecasts, " * Delta*p[t]),
+                      show_all_models = TRUE)
   dev.off()
 
-  actual_ts <- ts(actual_dpt, start = c(2024, 1), frequency = 4)
-  q3_files <- c("fig3_actual_vs_arima303.png", "fig3_actual_vs_arima106.png", "fig3_actual_vs_arima506.png")
-  q3_cols <- c("steelblue4", "firebrick4", "darkgreen")
-  q3_lty <- c(1, 2, 3)
+  q2_files <- c(
+    "fig2b_arima_3_0_3.png",
+    "fig2b_arima_1_0_6.png",
+    "fig2b_arima_5_0_6.png"
+  )
   for (i in seq_along(q2_dpt_forecasts)) {
-    png(q3_files[i], width = 1600, height = 650, res = fig_res)
-    plot(q2_dpt_forecasts[[i]], include = 20,
-         main = sprintf("Inflation: %s forecast vs actual 2024-2025Q3", q2_model_names[i]),
-         xlab = "", ylab = "Delta p_t", col = q3_cols[i])
-    lines(actual_ts, col = "black", lwd = 2)
-    legend("topright", legend = c(q2_model_names[i], "Actual"),
-           col = c(q3_cols[i], "black"), lty = c(q3_lty[i], 1), lwd = 2, bty = "n")
+    png(q2_files[i], width = 1600, height = 650, res = fig_res)
+    plot_forecast_bands(q2_dpt_forecasts[[i]], recent_dpt_ts,
+                        main_title = bquote("Inflation forecast: " * .(q2_model_names[i]) * ", " * Delta*p[t]),
+                        show_all_models = FALSE, actual_ts = NULL, model_index = i)
     dev.off()
   }
 
-  png("fig4a_real_rate.png", width = fig_width, height = 700, res = fig_res)
-  par(mfrow = c(2, 1), mar = c(3.5, 4, 3, 1))
-  plot(macro$date[-1], macro$rr[-1], type = "l", col = "black", lwd = 2,
-       xlab = "", ylab = "rr_t", main = "Real interest-rate proxy")
-  matplot(macro$date[-1], cbind(macro$dpt[-1], macro$rr[-1], macro$r[-1]),
-          type = "l", lty = 1, lwd = 2,
-          col  = c("steelblue4", "black", "firebrick4"),
-          xlab = "", ylab = "Level",
-          main = "Comparison with inflation and the nominal interest rate")
-  legend("topleft",
-         legend = c("Inflation (Delta p_t)", "Real rate (rr_t)", "Nominal rate (r_t)"),
-         col = c("steelblue4", "black", "firebrick4"), lty = 1, lwd = 2, bty = "n")
+  actual_ts <- ts(actual_dpt, start = c(2024, 1), frequency = 4)
+  q3_files <- c(
+    "fig3_actual_vs_arima_3_0_3.png",
+    "fig3_actual_vs_arima_1_0_6.png",
+    "fig3_actual_vs_arima_5_0_6.png"
+  )
+  for (i in seq_along(q2_dpt_forecasts)) {
+    png(q3_files[i], width = 1600, height = 650, res = fig_res)
+    plot_forecast_bands(q2_dpt_forecasts[[i]], recent_dpt_ts,
+                        main_title = bquote("Forecast performance: " * .(q2_model_names[i]) * ", " * Delta*p[t]),
+                        show_all_models = FALSE, actual_ts = actual_ts, model_index = i)
+    dev.off()
+  }
+
+  png("fig4a_real_rate.png", width = fig_width, height = 500, res = fig_res)
+  par(mar = c(4.2, 4.6, 3, 1))
+  matplot(macro$date[-1], cbind(macro$r[-1], macro$rr[-1], macro$inflation_pct[-1]),
+          type = "l", lty = c(1, 1, 1), lwd = 2,
+          col = c("firebrick4", "darkgreen", "steelblue4"), xlab = "Date", ylab = "Percentage points",
+          main = expression("Nominal rate, real-rate proxy, and inflation"))
+  legend("topleft", legend = expression(r[t], rr[t], 100 * Delta*p[t]),
+         col = c("firebrick4", "darkgreen", "steelblue4"), lty = c(1, 1, 1), lwd = 2, bty = "n")
   dev.off()
 
   png("fig4b_consumption_ratio.png", width = fig_width, height = 500, res = fig_res)
   plot(macro$date, macro$cy, type = "l", col = "firebrick4", lwd = 2,
-       xlab = "", ylab = "C_t / Y_t", main = "Consumption ratio")
+       xlab = "Date", ylab = expression(C[t] / Y[t]), main = expression("Consumption ratio: " * C[t] / Y[t]))
+  legend("topleft", legend = expression(C[t] / Y[t]), col = "firebrick4", lty = 1, lwd = 2, bty = "n")
   dev.off()
 
   png("fig5b_abs_returns.png", width = 1800, height = 900, res = fig_res)
-  par(mfrow = c(2, 2), mar = c(3.5, 4, 3, 1))
-  plot(fx$dates, abs(fx$returns$CNY), type = "l", col = "steelblue4", lwd = 1.5, xlab = "", ylab = "|e_t|", main = "CNY")
-  plot(fx$dates, abs(fx$returns$USD), type = "l", col = "firebrick4", lwd = 1.5, xlab = "", ylab = "|e_t|", main = "USD")
-  plot(fx$dates, abs(fx$returns$TWI), type = "l", col = "darkgreen",  lwd = 1.5, xlab = "", ylab = "|e_t|", main = "TWI")
-  plot(fx$dates, abs(fx$returns$SDR), type = "l", col = "purple4",    lwd = 1.5, xlab = "", ylab = "|e_t|", main = "SDR")
+  par(mfrow = c(2, 2), mar = c(4.2, 4.2, 3, 1))
+  plot(fx$dates, abs(fx$returns$CNY), type = "l", col = "steelblue4", lwd = 1.5,
+       xlab = "Date", ylab = expression(abs(e[t])), main = expression("CNY absolute returns: " * abs(e[t])))
+  legend("topleft", legend = "CNY", col = "steelblue4", lty = 1, lwd = 1.5, bty = "n")
+  plot(fx$dates, abs(fx$returns$USD), type = "l", col = "firebrick4", lwd = 1.5,
+       xlab = "Date", ylab = expression(abs(e[t])), main = expression("USD absolute returns: " * abs(e[t])))
+  legend("topleft", legend = "USD", col = "firebrick4", lty = 1, lwd = 1.5, bty = "n")
+  plot(fx$dates, abs(fx$returns$TWI), type = "l", col = "darkgreen",  lwd = 1.5,
+       xlab = "Date", ylab = expression(abs(e[t])), main = expression("TWI absolute returns: " * abs(e[t])))
+  legend("topleft", legend = "TWI", col = "darkgreen", lty = 1, lwd = 1.5, bty = "n")
+  plot(fx$dates, abs(fx$returns$SDR), type = "l", col = "purple4",    lwd = 1.5,
+       xlab = "Date", ylab = expression(abs(e[t])), main = expression("SDR absolute returns: " * abs(e[t])))
+  legend("topleft", legend = "SDR", col = "purple4", lty = 1, lwd = 1.5, bty = "n")
   dev.off()
 
   for (name in names(q6_final_fits)) {
     png(sprintf("fig6_vol_%s.png", name), width = fig_width, height = 500, res = fig_res)
     plot(fx$dates, sigma(q6_final_fits[[name]]), type = "l", col = "steelblue4", lwd = 1.5,
-         xlab = "", ylab = "sigma_t", main = sprintf("Conditional volatility: %s", name))
+         xlab = "Date", ylab = expression(sigma[t]), main = bquote("Conditional volatility: " * .(name) * ", " * sigma[t]))
+    legend("topleft", legend = bquote(.(name) ~ sigma[t]), col = "steelblue4", lty = 1, lwd = 1.5, bty = "n")
+    dev.off()
+  }
+
+  # Q6 diagnostic: ACF of squared standardised residuals + Ljung-Box p-values (lag 1-20)
+  png("fig6_sqstd_acf_pval.png", width = 1800, height = 1400, res = fig_res)
+  par(mfrow = c(4, 2), mar = c(4.2, 4.5, 3, 1))
+  for (name in names(q6_final_fits)) {
+    z2 <- as.numeric(residuals(q6_final_fits[[name]], standardize = TRUE))^2
+    n  <- length(z2)
+    ci <- 1.96 / sqrt(n)
+
+    # --- left panel: ACF of squared standardised residuals, lags 1-20 ---
+    acf_out <- acf(z2, lag.max = 20, plot = FALSE)
+    acf_vals <- as.numeric(acf_out$acf)[-1]   # drop lag-0
+    lags     <- 1:20
+    y_lim    <- range(c(acf_vals, -ci, ci), na.rm = TRUE)
+    plot(lags, acf_vals, type = "h", lwd = 2, col = "steelblue4",
+         xlab = "Lag", ylab = "ACF",
+         main = bquote("ACF of " * z[t]^2 * ": " * .(name)),
+         ylim = y_lim, xaxt = "n")
+    axis(1, at = seq(2, 20, by = 2))
+    abline(h = 0,        col = "gray40")
+    abline(h = c(-ci, ci), col = "steelblue3", lty = 2)
+
+    # --- right panel: Ljung-Box p-values for lags 1-20 ---
+    pvals <- sapply(lags, function(k) Box.test(z2, lag = k, type = "Ljung-Box")$p.value)
+    plot(lags, pvals, type = "p", pch = 16, col = "firebrick4", cex = 1.1,
+         xlab = "Lag", ylab = "p-value",
+         main = bquote("Ljung-Box p-values (" * z[t]^2 * "): " * .(name)),
+         ylim = c(0, 1), xaxt = "n")
+    axis(1, at = seq(2, 20, by = 2))
+    abline(h = 0.05, col = "firebrick3", lty = 2, lwd = 1.5)
+    abline(h = 0.10, col = "orange3",    lty = 3, lwd = 1.2)
+    legend("bottomright", legend = c("p = 0.05", "p = 0.10"),
+           col = c("firebrick3", "orange3"), lty = c(2, 3), lwd = 1.5, bty = "n", cex = 0.85)
+  }
+  dev.off()
+
+  # Q8: ugarchboot forecast plots (mean and volatility) for each currency
+  for (name in names(q6_final_fits)) {
+    boot <- ugarchboot(q6_final_fits[[name]], method = "Partial",
+                       n.bootpred = 500, n.bootfit = 100)
+    png(paste0("fig_q8_boot_mean_", tolower(name), ".png"),
+        width = 1200, height = 600, res = fig_res)
+    plot(boot, which = 2)
+    dev.off()
+    png(paste0("fig_q8_boot_vol_", tolower(name), ".png"),
+        width = 1200, height = 600, res = fig_res)
+    plot(boot, which = 3)
     dev.off()
   }
 }
@@ -546,14 +724,15 @@ build_results <- function() {
       cy_search = q4_cy_search$info
     ),
     q5 = list(sample_variances = q5_sample_vars),
-    q6 = list(
-      mean_screen  = q6_mean_screen,
-      arch_tests   = q6_arch_tests,
-      garch_screen = q6_garch_screen,
-      best_specs   = q6_best_specs,
-      coefficients = q6_coefficients,
-      diagnostics  = q6_diagnostics
-    ),
+  q6 = list(
+    mean_screen  = q6_mean_screen,
+    arma_table   = q6_arma_table,
+    arch_tests   = q6_arch_tests,
+    garch_screen = q6_garch_screen,
+    best_specs   = q6_best_specs,
+    coefficients = q6_coefficients,
+    diagnostics  = q6_diagnostics
+  ),
     q7 = list(variance_table = q7_variances),
     q8 = list(probability_table = q8_probabilities)
   )

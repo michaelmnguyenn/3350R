@@ -18,10 +18,10 @@ e_sdr <- 100 * diff(log(ex$SDR))
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fit Q6 models (same specs as q7.R):
-#   CNY: ARMA(2,2)-sGARCH(2,2), no intercept  (include.mean=FALSE)
-#   USD: ARMA(2,2)-sGARCH(2,2), with intercept
-#   TWI: ARMA(2,2)-sGARCH(2,2), with intercept
-#   SDR: ARMA(2,2)-sGARCH(2,1) [garchOrder=c(1,2)], gosolnp for better convergence
+#   CNY: ARMA(2,2)-sGARCH(1,2), with intercept  (include.mean=TRUE)
+#   USD: ARMA(2,2)-sGARCH(2,2), with intercept  (include.mean=TRUE)
+#   TWI: ARMA(2,2)-sGARCH(2,2), with intercept  (include.mean=TRUE)
+#   SDR: ARMA(2,2)-sGARCH(1,2), with intercept  (include.mean=TRUE)
 # ─────────────────────────────────────────────────────────────────────────────
 make_spec <- function(arma_order, garch_order, inc_mean = TRUE) {
   ugarchspec(
