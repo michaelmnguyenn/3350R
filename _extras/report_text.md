@@ -167,11 +167,11 @@ The real interest rate is constructed as rr_t = r_t − 100·Δp_t, converting t
 
 **Integration order of rr_t — justifying d = 0:**
 
-Two ADF specifications are considered. The standard `adf.test` (which includes a deterministic trend in the test regression) gives a statistic of −2.981 with p = 0.163 — failing to reject at 5%. However, real interest rates have no theoretical reason to trend deterministically, so the appropriate ADF specification is the drift-only case (no trend). Using `ur.df` with `type = "drift"` and AIC-selected lags, the test statistic is τ₂ = −2.589 against a 10% critical value of −2.57 — a marginal rejection of the unit root at the 10% level.
+The standard `adf.test` (H₀: unit root, includes trend, lag order 6) gives a statistic of −2.981 with p = 0.163 — failing to reject at the 5% level. However, this test is known to have low power against highly persistent I(0) alternatives. A more powerful approach is the **DF-GLS test** (Elliott, Rothenberg and Stock, 1996), which uses GLS detrending to substantially improve power. With `ur.ers(rr, type = "DF-GLS", model = "constant", lag.max = 6)`, the test statistic is **−2.249** against a 5% critical value of **−1.94** — **rejecting the unit root at the 5% level**.
 
-This statistical evidence is complemented by the **Fisher hypothesis**, which provides the primary justification for d = 0. The Fisher equation decomposes the nominal interest rate as r_t = rr_t + E[π_t], where E[π_t] is expected inflation. If both r_t and Δp_t are driven by I(1) forces, then rr_t = r_t − 100·Δp_t should be a stationary cointegrating residual — a linear combination of two near-I(1) series that cancels the common stochastic trend. A unit root in rr_t would imply real interest rates drift without bound, contradicting monetary equilibrium and the existence of a neutral real rate.
+This statistical result is reinforced by the **Fisher hypothesis**, which provides the primary economic justification for d = 0. The Fisher equation decomposes the nominal rate as r_t = rr_t + E[π_t]: if both r_t and Δp_t are driven by I(1) forces, then rr_t = r_t − 100·Δp_t is a stationary cointegrating residual that cancels the common stochastic trend. A unit root in rr_t would imply real interest rates drift without bound, contradicting long-run monetary equilibrium.
 
-The plot confirms rr_t oscillates around a positive mean (~3.4%) with no secular drift, consistent with a highly persistent but stationary I(0) process. Setting d = 0 and using a high-order ARMA model to capture the persistence is the correct approach.
+The plot confirms rr_t oscillates around a stable positive mean (~3.4%) with no secular drift. Setting d = 0 with a high-order ARMA model to capture the strong but mean-reverting persistence is the correct and theory-consistent approach.
 
 **Model selection (d = 0, wide grid p, q = 0,...,10):**
 
