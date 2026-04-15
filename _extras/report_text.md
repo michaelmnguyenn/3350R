@@ -171,13 +171,13 @@ This model is selected because it has the lowest AIC among the adequate models. 
 
 ### 4d)
 
-For the consumption ratio, a search over `p, q ∈ {0, ..., 3}` and `d ∈ {0, 1}` with deterministic terms was carried out using AIC, BIC and residual diagnostics. ADF tests give a p-value of 0.030, providing borderline rejection of a unit root, but KPSS (stat = 4.14) strongly rejects stationarity, pointing to a trending series. Differencing is therefore preferred to remove the upward drift. The best model by AIC is:
+For the consumption ratio, a search over `p, q ∈ {0, ..., 6}` and `d ∈ {0, 1}`, with and without deterministic terms, was carried out using AIC, BIC and residual diagnostics. ADF tests with a trend reject the null of a unit root for `cy_t` at the 5% level (stat = −3.47, CV = −2.87), supporting `d = 0`. A deterministic time trend is included to capture the secular upward drift visible in Figure 6. The best model by AIC is:
 
-| Model        | d | AIC      | BIC      | Ljung-Box p-value |
-|--------------|---|----------|----------|------------------|
-| ARIMA(2,1,2) | 1 | −2129.79 | −2111.98 | 0.4231           |
+| Model                    | d | AIC      | BIC      | Ljung-Box p-value |
+|--------------------------|---|----------|----------|------------------|
+| ARIMA(3,0,2) with trend  | 0 | −2146.13 | −2117.65 | 0.9939           |
 
-This model is preferred because it has the lowest AIC among adequate models with `d = 1`. Differencing removes the upward drift and the ARMA(2,2) structure captures the short-run fluctuations in the consumption ratio around its changing mean.
+This model is preferred because it has the lowest AIC and ADF supports stationarity around a trend. The positive trend coefficient of 0.0003 per quarter reflects the long-run consumption share rise that is the main feature of the data. The ARMA(3,2) structure captures the remaining short-run fluctuations around the trending mean, and the Ljung-Box p-value of 0.9939 confirms no residual autocorrelation.
 
 ### 4e)
 
