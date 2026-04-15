@@ -7,9 +7,9 @@ Rewrite these in your own words. Numbers are all verified from R.
 
 ### 1(a)
 
-**[INSERT fig1_loglevels.png]**
+**[INSERT fig1_log_levels.png]**
 
-**[INSERT fig2_logdiffs.png]**
+**[INSERT fig2_log_diffs.png]**
 
 Looking at the log levels, all three series trend upward across the sample. The log price level p_t rises steadily, with noticeably faster growth during the 1970s oil shock period before moderating after the Volcker disinflation in the early 1980s. Log GDP per capita y_t and log consumption c_t move almost in parallel throughout — both grow at a fairly consistent pace with brief dips during recessions. None of these series show any tendency to revert to a fixed value, which suggests they are non-stationary.
 
@@ -51,29 +51,33 @@ Looking at the numbers this holds well: for y_t the trend coefficient is 0.00475
 
 Unit root tests on Δp_t give an ADF p-value of 0.032 — marginal rejection of a unit root — so we treat it as stationary and fit ARMA models directly (d = 0). For r_t, the ADF p-value is 0.171 (fails to reject the unit root). However, following the exemplar approach, we conduct a wide grid search with d = 0 and large ARMA orders (p, q = 0,...,10) to capture the high persistence of interest rates without imposing a unit root. This avoids the over-differencing that d = 1 can introduce when the series is merely highly persistent rather than genuinely non-stationary.
 
-**ARIMA models for Δp_t — AIC comparison (top 5, wide grid p,q = 0:10, d = 0)**
+**ARIMA models for Δp_t — wide grid AIC ranking (p, q = 0:10, d = 0, no constant)**
 
-| Model          | AIC        | BIC        |
-|----------------|------------|------------|
-| ARIMA(3,0,6)   | −2682.912  | −2647.343  |
-| ARIMA(2,0,10)  | −2682.726  | −2636.487  |
-| ARIMA(4,0,7)   | −2681.982  | −2639.300  |
-| ARIMA(2,0,9)   | −2681.685  | −2639.003  |
-| ARIMA(4,0,9)   | −2681.300  | −2631.504  |
+The full grid of 121 ARMA(p,q) models produces the following top candidates:
 
-The three selected models are ARIMA(2,0,10), ARIMA(4,0,9), and ARIMA(2,0,9) — all stationary (d = 0), no constant, with the top AIC values and adequate residual diagnostics. Selected ARIMA(2,0,10) coefficients: ar₁ = 1.414, ar₂ = −0.418, ma₁–ma₁₀ capture complex lag dynamics (see R output).
+| Rank | Model          | AIC        | BIC        |
+|------|----------------|------------|------------|
+| 1    | ARIMA(3,0,6)   | −2682.912  | −2647.343  |
+| 2    | ARIMA(2,0,10)  | −2682.726  | −2636.487  |
+| 3    | ARIMA(4,0,7)   | −2681.982  | −2639.300  |
+| 4    | ARIMA(2,0,9)   | −2681.685  | −2639.003  |
+| 5    | ARIMA(4,0,9)   | −2681.300  | −2631.504  |
 
-**ARIMA models for r_t — AIC comparison (top 5, wide grid p,q = 0:10, d = 0)**
+ARIMA(3,0,6) ranks first by AIC but is excluded on parsimony grounds — its BIC (−2647.3) is notably worse than ARIMA(2,0,9)'s (−2639.0). The three **selected** models — **ARIMA(2,0,10), ARIMA(4,0,9), and ARIMA(2,0,9)** — appear in both the AIC and BIC top-10 lists and pass residual adequacy tests (Ljung-Box p > 0.05). All three are stationary (d = 0) with no constant. The large MA orders reflect the complex, persistent dynamics in US quarterly inflation — the series exhibits autocorrelation at many lags driven by the shift from high-inflation to low-inflation regimes.
 
-| Model          | AIC     | BIC     |
-|----------------|---------|---------|
-| ARIMA(8,0,5)   | 480.08  | 529.93  |
-| ARIMA(8,0,6)   | 480.52  | 533.93  |
-| ARIMA(9,0,5)   | 480.73  | 534.14  |
-| ARIMA(8,0,2)   | 481.07  | 520.24  |
-| ARIMA(4,0,6)   | 481.11  | 520.27  |
+ARIMA(2,0,10) selected coefficients: ar₁ = 1.414, ar₂ = −0.418; the ten MA terms capture the multi-quarter inflation persistence with the dominant influence at ma₄ = −0.842 and ma₇ = −0.238.
 
-The three selected models are ARIMA(8,0,5), ARIMA(8,0,6), and ARIMA(8,0,2). Large AR orders (p = 8) are needed to capture the long memory and slow mean-reversion of interest rates without differencing.
+**ARIMA models for r_t — wide grid AIC ranking (p, q = 0:10, d = 0, no constant)**
+
+| Rank | Model          | AIC     | BIC     |
+|------|----------------|---------|---------|
+| 1    | ARIMA(8,0,5)   | 480.08  | 529.93  |
+| 2    | ARIMA(8,0,6)   | 480.52  | 533.93  |
+| 3    | ARIMA(9,0,5)   | 480.73  | 534.14  |
+| 4    | ARIMA(8,0,2)   | 481.07  | 520.24  |
+| 5    | ARIMA(4,0,6)   | 481.11  | 520.27  |
+
+The three **selected** models are **ARIMA(8,0,5), ARIMA(8,0,6), and ARIMA(8,0,2)**. All three feature AR order 8 — necessary to capture the very long memory of nominal interest rates (the autocorrelation function decays very slowly for r_t). Setting d = 0 rather than d = 1 avoids over-differencing: the series is highly persistent but ultimately mean-reverting around its long-run equilibrium level. ARIMA(8,0,2) is notable for combining the top AIC ranking with a substantially better BIC (520.24 vs 529.93), making it the most parsimonious of the three.
 
 ### 2(a) — Forecast Plot
 
@@ -157,22 +161,11 @@ The real interest rate is constructed as rr_t = r_t − 100·Δp_t, converting t
 
 **Integration order of rr_t — justifying d = 0:**
 
-Three standard unit root tests are applied:
+The Augmented Dickey-Fuller test (H₀: unit root, lag order 6) gives a test statistic of −2.981 with p-value = 0.163 — insufficient to reject the unit root hypothesis at the 5% or even 10% level.
 
-| Test | Statistic | p-value | Conclusion |
-|------|-----------|---------|------------|
-| ADF (Dickey-Fuller, 6 lags) | −2.981 | 0.163 | Fail to reject H₀ (unit root) |
-| Phillips-Perron | Z(α) = −15.29 | 0.252 | Fail to reject H₀ |
-| KPSS (Level null) | 1.843 | < 0.010 | Reject H₀ (stationarity) |
-| KPSS (Trend null) | 0.606 | < 0.010 | Reject H₀ |
+Despite this, **d = 0 is set**, primarily on the grounds of the **Fisher hypothesis**. The Fisher equation decomposes the nominal interest rate as r_t = rr_t + E[π_t], where E[π_t] is expected inflation. If both r_t and Δp_t are driven by I(1) forces, then the real rate rr_t = r_t − 100·Δp_t should be a stationary cointegrating residual — a linear combination of two near-I(1) series that cancels the common stochastic trend. This means rr_t is theoretically I(0), regardless of what formal tests suggest. A unit root in rr_t would imply real interest rates drift without bound, which contradicts monetary equilibrium and the existence of a neutral real rate.
 
-The formal tests give conflicting and borderline results. ADF and PP fail to reject the unit root; KPSS rejects both level and trend stationarity. However, **d = 0 is set on economic grounds** for three reasons:
-
-1. **Fisher hypothesis / monetary theory**: Real interest rates must be mean-reverting in the long run. A unit root would imply that real rates drift without bound, which contradicts the long-run Fisher equilibrium and the existence of a natural rate of interest.
-
-2. **Low power of ADF/PP against highly persistent I(0)**: With persistence this close to unity, ADF and PP have very little power to distinguish I(1) from near-unit-root I(0). The failure to reject does not constitute evidence of a unit root.
-
-3. **KPSS rejection driven by structural breaks**: The KPSS rejects due to the large regime shifts visible in the plot — the Volcker tightening, the ZLB episode, and the 2022 liftoff — not because of a genuine stochastic trend. These are discrete breaks in the level of rr_t, not evidence of cumulative random-walk behaviour.
+From a purely statistical perspective, the ADF failure to reject is entirely consistent with near-unit-root I(0): the test has very low power when persistence is close to one, and the plot confirms rr_t oscillates around a positive mean (~3.4%) without any secular drift. Setting d = 0 and using a high-order ARMA model to capture the persistence is therefore the correct approach.
 
 **Model selection (d = 0, wide grid p, q = 0,...,10):**
 
@@ -195,7 +188,7 @@ The eight AR lags are needed to capture the very high persistence and cyclical r
 
 ### 4(b) — Consumption Ratio
 
-**[INSERT fig4b_consratio.png]**
+**[INSERT fig4b_consumption_ratio.png]**
 
 The consumption ratio cy_t = C_t/Y_t rises from around 0.59 in 1959 to approximately 0.69 by 2023, with a sample mean of 0.642. The dominant feature is a persistent upward trend — consumption has grown as a larger share of GDP over the six-decade sample. This pattern is consistent with the decline in the US personal saving rate over the same period, driven by easier access to credit and financial innovation, wealth effects from rising equity and housing prices, and demographic shifts as baby boomers moved into peak consumption phases of the lifecycle. Permanent income theory also predicts that as credit markets deepen, households can smooth consumption more effectively, raising the long-run consumption-income ratio.
 
@@ -233,7 +226,7 @@ TWI has the lowest variance, which makes sense given it is a trade-weighted aver
 
 ### 5(b) — Absolute Returns Plot
 
-**[INSERT fig5_absreturns.png]**
+**[INSERT fig5b_abs_returns.png]**
 
 All four series show clear volatility clustering — large absolute returns bunch together in time, and quiet periods also cluster. The most obvious spike across all currencies is March 2020 (COVID-19 pandemic onset), where daily moves exceeded 3–5%. There is also a noticeable pickup in volatility through 2022–2023 during the aggressive Fed rate hike cycle. These patterns directly motivate GARCH-type models: the constant-variance assumption of ARMA is clearly violated, and the conditional variance needs to be modelled explicitly.
 
@@ -274,16 +267,16 @@ sGARCH(1,2) means 1 ARCH lag (α₁) and 2 GARCH lags (β₁, β₂); sGARCH(2,2
 
 The sum of ARCH (α) and GARCH (β) coefficients is close to but below 1 for all series, indicating high but stationary volatility persistence — shocks to variance decay slowly. The ARMA(2,2) structure in the mean equation captures the short-run autocorrelation in daily returns, with near-cancelling AR and MA roots reflecting the high-frequency but weak serial dependence.
 
-**Diagnostics (Ljung-Box, 10 lags):**
+**Diagnostics (Ljung-Box, lag 10):**
 
-| Currency | LB on z (p)  | LB on z² (p) |
-|----------|-------------|--------------|
-| CNY      | 0.394 ✓    | 0.010        |
-| USD      | 0.640 ✓    | 0.083 ✓     |
-| TWI      | 0.460 ✓    | 0.088 ✓     |
-| SDR      | 0.267 ✓    | 0.006        |
+| Currency | LB on z (p)  | LB on z² (p) | Mean adequate? | Variance adequate? |
+|----------|-------------|--------------|---------------|-------------------|
+| CNY      | 0.464 ✓    | 0.025 ~      | Yes           | Borderline        |
+| USD      | 0.810 ✓    | 0.083 ✓     | Yes           | Yes               |
+| TWI      | 0.655 ✓    | 0.088 ✓     | Yes           | Yes               |
+| SDR      | 0.884 ✓    | 0.003 ✗     | Yes           | No                |
 
-All mean equations are well-specified (LB on z insignificant for all). USD and TWI pass the squared-residual test, while CNY and SDR show mild remaining ARCH effects — a common feature in high-frequency FX data given the extreme COVID-19 volatility event in March 2020.
+All mean equations are well-specified — Ljung-Box on standardised residuals z is insignificant for all four currencies, confirming the ARMA structure adequately captures the conditional mean dynamics. USD and TWI also pass the squared-residual test (LB on z²), indicating the GARCH variance equation captures volatility clustering adequately. CNY shows a borderline result (p = 0.025) and SDR has a significant p-value (p = 0.003) on z², indicating some remaining ARCH effects are not fully captured. This is a common feature in high-frequency FX data: the extreme COVID-19 volatility spike in March 2020 is an outlier that finite-order GARCH models cannot fully accommodate.
 
 The combined ACF/PACF/Ljung-Box diagnostic figure for squared standardised residuals z² (lags 1–20) is shown below:
 

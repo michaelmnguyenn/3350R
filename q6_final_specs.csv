@@ -1,5 +1,5 @@
-"currency","mean_model","variance_model","garch_p","garch_q","distribution"
-"CNY","ARMA(2,3)","sGARCH",1,3,"norm"
-"USD","ARMA(0,0)","sGARCH",3,3,"norm"
-"TWI","ARMA(1,0)","sGARCH",1,3,"norm"
-"SDR","ARMA(0,1)","sGARCH",4,4,"norm"
+"currency","mean_model","variance_model","garch_label","arch_order","garch_order","distribution","include_mean"
+"CNY","ARMA(2,2)","sGARCH","GARCH(2,2)",2,2,"norm",FALSE
+"USD","ARMA(2,2)","sGARCH","GARCH(2,2)",2,2,"norm",TRUE
+"TWI","ARMA(2,2)","sGARCH","GARCH(2,2)",2,2,"norm",TRUE
+"SDR","ARMA(2,2)","sGARCH","GARCH(2,1)",1,2,"norm",TRUE
