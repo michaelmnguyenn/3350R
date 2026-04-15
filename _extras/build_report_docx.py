@@ -3,8 +3,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from docx import Document
+from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Inches, Pt
+from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 
@@ -16,26 +17,37 @@ FIGURE_FALLBACKS = {
     "Figure 1": ["fig1_log_levels.png"],
     "Figure 2": ["fig2_log_diffs.png"],
     "Figure 3": ["fig2a_forecast.png"],
+    "Figures 3a–3c": [
+        "fig2b_arima_3_0_3.png",
+        "fig2b_arima_1_0_6.png",
+        "fig2b_arima_5_0_6.png",
+    ],
+    "Figures 3a-3c": [
+        "fig2b_arima_3_0_3.png",
+        "fig2b_arima_1_0_6.png",
+        "fig2b_arima_5_0_6.png",
+    ],
     "Figures 4-6": [
-        "fig3_actual_vs_arima303.png",
-        "fig3_actual_vs_arima106.png",
-        "fig3_actual_vs_arima506.png",
+        "fig3_actual_vs_arima_3_0_3.png",
+        "fig3_actual_vs_arima_1_0_6.png",
+        "fig3_actual_vs_arima_5_0_6.png",
     ],
     "Figures 4–6": [
-        "fig3_actual_vs_arima303.png",
-        "fig3_actual_vs_arima106.png",
-        "fig3_actual_vs_arima506.png",
+        "fig3_actual_vs_arima_3_0_3.png",
+        "fig3_actual_vs_arima_1_0_6.png",
+        "fig3_actual_vs_arima_5_0_6.png",
     ],
     "Figure 7": ["fig4a_real_rate.png"],
     "Figure 8": ["fig4b_consumption_ratio.png"],
     "Figure 9": ["fig5b_abs_returns.png"],
-    "Figures 10-13": [
+    "Figure 10": ["fig6_sqstd_acf_pval.png"],
+    "Figures 11-14": [
         "fig6_vol_CNY.png",
         "fig6_vol_USD.png",
         "fig6_vol_TWI.png",
         "fig6_vol_SDR.png",
     ],
-    "Figures 10–13": [
+    "Figures 11–14": [
         "fig6_vol_CNY.png",
         "fig6_vol_USD.png",
         "fig6_vol_TWI.png",
@@ -45,9 +57,23 @@ FIGURE_FALLBACKS = {
 
 
 def set_default_style(document: Document) -> None:
-    style = document.styles["Normal"]
-    style.font.name = "Times New Roman"
-    style.font.size = Pt(12)
+    for style_name in ("Normal", "Heading 1", "Heading 2", "Heading 3", "Title"):
+        style = document.styles[style_name]
+        style.font.name = "Calibri"
+        style.font.size = Pt(12)
+        style.font.color.rgb = RGBColor(0, 0, 0)
+        if style_name != "Normal":
+            style.font.bold = True
+
+
+def set_run_style(run, bold: bool | None = None, italic: bool | None = None) -> None:
+    run.font.name = "Calibri"
+    run.font.size = Pt(12)
+    run.font.color.rgb = RGBColor(0, 0, 0)
+    if bold is not None:
+        run.bold = bold
+    if italic is not None:
+        run.italic = italic
 
 
 def math_segments(text: str) -> list[tuple[str, bool, bool]]:
@@ -112,13 +138,141 @@ def math_segments(text: str) -> list[tuple[str, bool, bool]]:
     return segments
 
 
+SUBSCRIPT_MAP = str.maketrans({
+    "0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄",
+    "5": "₅", "6": "₆", "7": "₇", "8": "₈", "9": "₉",
+    "+": "₊", "-": "₋", "=": "₌", "(": "₍", ")": "₎",
+    "a": "ₐ", "e": "ₑ", "h": "ₕ", "i": "ᵢ", "j": "ⱼ",
+    "k": "ₖ", "l": "ₗ", "m": "ₘ", "n": "ₙ", "o": "ₒ",
+    "p": "ₚ", "r": "ᵣ", "s": "ₛ", "t": "ₜ", "u": "ᵤ",
+    "v": "ᵥ", "x": "ₓ",
+    ",": ",", "T": "T", "C": "C", "Y": "Y",
+})
+
+SUPERSCRIPT_MAP = str.maketrans({
+    "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
+    "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
+    "+": "⁺", "-": "⁻", "=": "⁼", "(": "⁽", ")": "⁾",
+    "i": "ⁱ", "n": "ⁿ", "j": "ʲ",
+})
+
+
+def linear_math_text(text: str) -> str:
+    """
+    Convert simple LaTeX-ish sub/superscript markers to visible Unicode
+    characters before placing the result inside a Word OMML equation object.
+    This keeps formulas readable in Word without relying on code-font runs.
+    """
+    parts = math_segments(text)
+    converted: list[str] = []
+    for seg_text, is_sub, is_sup in parts:
+        if is_sub:
+            converted.append(seg_text.translate(SUBSCRIPT_MAP))
+        elif is_sup:
+            converted.append(seg_text.translate(SUPERSCRIPT_MAP))
+        else:
+            converted.append(seg_text)
+    return "".join(converted)
+
+
+def is_math_like(text: str) -> bool:
+    math_markers = (
+        "_", "^", "Δ", "δ", "μ", "σ", "ω", "α", "β", "φ", "θ",
+        "Φ", "∈", "−", "×", "<", ">", "=", "sum ", "P(",
+    )
+    if any(marker in text for marker in math_markers):
+        return True
+    return bool(re.match(r"^[a-zA-Z]+\([^)]+\)(-[A-Z]+\([^)]+\))?$", text))
+
+
+SCRIPTED_TOKEN = re.compile(
+    r"([A-Za-z]+|[αβγδμσφθωΣΦΔ])"
+    r"(?:(?:_\{([^}]+)\})|_([A-Za-z0-9,+\-−]+))?"
+    r"(?:(?:\^\{([^}]+)\})|\^([A-Za-z0-9,+\-−]+))?"
+)
+
+
+def math_run(text: str):
+    m_run = OxmlElement("m:r")
+    m_text = OxmlElement("m:t")
+    m_text.text = text
+    m_run.append(m_text)
+    return m_run
+
+
+def scripted_math_element(base: str, subscript: str | None, superscript: str | None):
+    if subscript and superscript:
+        elem = OxmlElement("m:sSubSup")
+        base_tag = "m:e"
+        sub_tag = "m:sub"
+        sup_tag = "m:sup"
+    elif subscript:
+        elem = OxmlElement("m:sSub")
+        base_tag = "m:e"
+        sub_tag = "m:sub"
+        sup_tag = None
+    elif superscript:
+        elem = OxmlElement("m:sSup")
+        base_tag = "m:e"
+        sub_tag = None
+        sup_tag = "m:sup"
+    else:
+        return math_run(base)
+
+    base_elem = OxmlElement(base_tag)
+    base_elem.append(math_run(base))
+    elem.append(base_elem)
+
+    if subscript:
+        sub_elem = OxmlElement(sub_tag)
+        sub_elem.append(math_run(subscript))
+        elem.append(sub_elem)
+
+    if superscript:
+        sup_elem = OxmlElement(sup_tag)
+        sup_elem.append(math_run(superscript))
+        elem.append(sup_elem)
+
+    return elem
+
+
+def add_omml_math(paragraph, raw_text: str) -> None:
+    o_math = OxmlElement("m:oMath")
+    position = 0
+    for match in SCRIPTED_TOKEN.finditer(raw_text):
+        base = match.group(1)
+        subscript = match.group(2) or match.group(3)
+        superscript = match.group(4) or match.group(5)
+        if match.start() > position:
+            o_math.append(math_run(raw_text[position:match.start()]))
+        o_math.append(scripted_math_element(base, subscript, superscript))
+        position = match.end()
+    if position < len(raw_text):
+        o_math.append(math_run(raw_text[position:]))
+    paragraph._p.append(o_math)
+
+
+PLAIN_MATH_TOKEN = re.compile(r"(R²|[δμσ][̂]?(?:²)?|[αβφθωΦΣ][̂]?(?:[₀-₉ᵢⱼₜ₊₋]+)?|[A-Za-z]?[₀-₉ₜⱼᵢ₊₋]+(?:²)?)")
+
+
+def add_plain_runs(paragraph, text: str) -> None:
+    for piece in PLAIN_MATH_TOKEN.split(text):
+        if not piece:
+            continue
+        if PLAIN_MATH_TOKEN.fullmatch(piece):
+            add_omml_math(paragraph, piece)
+        else:
+            run = paragraph.add_run(piece)
+            set_run_style(run)
+
+
 def add_runs(paragraph, raw_text: str) -> None:
     """
     Parse raw_text and add appropriately formatted runs to paragraph.
 
     Recognised markers:
       **text**   → bold run
-      `expr`     → italic run(s) with Word subscript/superscript where _x or _{} appear
+      `expr`     → Word equation object when mathematical; otherwise italic run
       plain text → normal run (inherits document style)
     """
     # Split into: bold spans, math spans, plain text
@@ -131,20 +285,18 @@ def add_runs(paragraph, raw_text: str) -> None:
 
         if part.startswith('**') and part.endswith('**'):
             run = paragraph.add_run(part[2:-2])
-            run.bold = True
+            set_run_style(run, bold=True)
 
         elif part.startswith('`') and part.endswith('`'):
             inner = part[1:-1]
-            for seg_text, is_sub, is_sup in math_segments(inner):
-                run = paragraph.add_run(seg_text)
-                run.italic = True
-                if is_sub:
-                    run.font.subscript = True
-                elif is_sup:
-                    run.font.superscript = True
+            if is_math_like(inner):
+                add_omml_math(paragraph, inner)
+            else:
+                run = paragraph.add_run(inner)
+                set_run_style(run, italic=True)
 
         else:
-            paragraph.add_run(part)
+            add_plain_runs(paragraph, part)
 
 
 def format_cell(cell, raw_text: str, bold_header: bool = False) -> None:
@@ -163,18 +315,10 @@ def format_cell(cell, raw_text: str, bold_header: bool = False) -> None:
 
 
 def add_title_page(document: Document) -> None:
-    p = document.add_heading("ECON3350 Research Report", level=1)
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-    sub = document.add_paragraph("Applied Econometrics for Macroeconomics and Finance")
-    sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    for run in sub.runs:
-        run.font.size = Pt(14)
-
-    date_p = document.add_paragraph("17 April 2026")
-    date_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-    document.add_page_break()
+    p = document.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    run = p.add_run("ECON3350 Research Report: Michael Nguyen (s4884533)")
+    set_run_style(run, bold=True)
 
 
 def add_markdown_table(document: Document, rows: list[str]) -> None:
@@ -229,7 +373,8 @@ def add_figure_block(document: Document, line: str) -> None:
         caption = re.sub(r"`", "", caption)
         caption = caption.strip().strip(":").strip()
         if caption:
-            cap_p = document.add_paragraph(caption)
+            cap_p = document.add_paragraph()
+            add_runs(cap_p, caption)
             cap_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     else:
         p = document.add_paragraph()
@@ -309,13 +454,7 @@ def build_docx() -> None:
             inner = line.strip()[1:-1]
             p = document.add_paragraph()
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            for seg_text, is_sub, is_sup in math_segments(inner):
-                run = p.add_run(seg_text)
-                run.italic = True
-                if is_sub:
-                    run.font.subscript = True
-                elif is_sup:
-                    run.font.superscript = True
+            add_omml_math(p, inner)
             i += 1
             continue
 
