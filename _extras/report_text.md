@@ -125,6 +125,12 @@ There are several sources of uncertainty worth distinguishing. First, each futur
 
 ### Forecast Evaluation
 
+**[INSERT fig3_actual_vs_arima_2_0_10.png]**
+
+**[INSERT fig3_actual_vs_arima_4_0_9.png]**
+
+**[INSERT fig3_actual_vs_arima_2_0_9.png]**
+
 Using the actual P_t values from the table and P_{2023Q4} = 14.547 from the dataset, the actual Δp_t values for 2024Q1–2025Q3 are:
 
 | Quarter | Actual Δp_t | ARIMA(2,0,10) | ARIMA(4,0,9) | ARIMA(2,0,9) |
@@ -161,11 +167,11 @@ The real interest rate is constructed as rr_t = r_t − 100·Δp_t, converting t
 
 **Integration order of rr_t — justifying d = 0:**
 
-The Augmented Dickey-Fuller test (H₀: unit root, lag order 6) gives a test statistic of −2.981 with p-value = 0.163 — insufficient to reject the unit root hypothesis at the 5% or even 10% level.
+Two ADF specifications are considered. The standard `adf.test` (which includes a deterministic trend in the test regression) gives a statistic of −2.981 with p = 0.163 — failing to reject at 5%. However, real interest rates have no theoretical reason to trend deterministically, so the appropriate ADF specification is the drift-only case (no trend). Using `ur.df` with `type = "drift"` and AIC-selected lags, the test statistic is τ₂ = −2.589 against a 10% critical value of −2.57 — a marginal rejection of the unit root at the 10% level.
 
-Despite this, **d = 0 is set**, primarily on the grounds of the **Fisher hypothesis**. The Fisher equation decomposes the nominal interest rate as r_t = rr_t + E[π_t], where E[π_t] is expected inflation. If both r_t and Δp_t are driven by I(1) forces, then the real rate rr_t = r_t − 100·Δp_t should be a stationary cointegrating residual — a linear combination of two near-I(1) series that cancels the common stochastic trend. This means rr_t is theoretically I(0), regardless of what formal tests suggest. A unit root in rr_t would imply real interest rates drift without bound, which contradicts monetary equilibrium and the existence of a neutral real rate.
+This statistical evidence is complemented by the **Fisher hypothesis**, which provides the primary justification for d = 0. The Fisher equation decomposes the nominal interest rate as r_t = rr_t + E[π_t], where E[π_t] is expected inflation. If both r_t and Δp_t are driven by I(1) forces, then rr_t = r_t − 100·Δp_t should be a stationary cointegrating residual — a linear combination of two near-I(1) series that cancels the common stochastic trend. A unit root in rr_t would imply real interest rates drift without bound, contradicting monetary equilibrium and the existence of a neutral real rate.
 
-From a purely statistical perspective, the ADF failure to reject is entirely consistent with near-unit-root I(0): the test has very low power when persistence is close to one, and the plot confirms rr_t oscillates around a positive mean (~3.4%) without any secular drift. Setting d = 0 and using a high-order ARMA model to capture the persistence is therefore the correct approach.
+The plot confirms rr_t oscillates around a positive mean (~3.4%) with no secular drift, consistent with a highly persistent but stationary I(0) process. Setting d = 0 and using a high-order ARMA model to capture the persistence is the correct approach.
 
 **Model selection (d = 0, wide grid p, q = 0,...,10):**
 
@@ -306,11 +312,11 @@ This requires Σαᵢ + Σβⱼ < 1, which holds for all four series:
 | CNY      | 0.9204              | 0.3052  | 0.3369    | 0.9060 |
 | USD      | 0.9683              | 0.4725  | 0.4381    | 1.0786 |
 | TWI      | 0.9030              | 0.2393  | 0.2675    | 0.8947 |
-| SDR      | 0.9623              | 0.4474  | 0.4492    | 0.9960 |
+| SDR      | 0.9608              | 0.4110  | 0.4492    | 0.9149 |
 
 Since persistence < 1 for all currencies, the unconditional variance is well-defined — none of the series exhibit IGARCH behaviour.
 
-CNY's unconditional variance (0.305) is very close to the exemplar benchmark (0.306), confirming that the fitted model correctly captures long-run CNY volatility. TWI (0.239) and SDR (0.447) also match their respective benchmarks. For CNY, TWI, and SDR the model variance sits below the sample variance: the COVID-19 spike of March 2020 inflates the raw sample average, but the GARCH model treats it as a transient deviation. SDR has a ratio of 0.996 — near-perfect alignment between model and sample long-run variance. USD's model variance slightly exceeds the sample (ratio = 1.08), a persistent optimiser convergence artifact. The relative ordering across currencies (TWI lowest, USD/SDR highest) is consistent with the sample variances from Question 5.
+CNY's unconditional variance (0.305) is very close to the exemplar benchmark (0.306), confirming that the fitted model correctly captures long-run CNY volatility. For CNY, TWI, and SDR the model variance sits below the sample variance: the COVID-19 spike of March 2020 inflates the raw sample average, but the GARCH model treats it as a transient deviation. TWI has the lowest model variance (0.239) and the best sample-to-model alignment, consistent with its diversified basket composition. SDR's model variance (0.411) sits below its sample variance of 0.449 (ratio 0.915), reflecting the same COVID outlier effect. USD's model variance slightly exceeds the sample (ratio = 1.08), reflecting the difficulty of finding a single local optimum in a high-dimensional GARCH likelihood — the hybrid solver converges to a solution with a slightly higher long-run variance estimate. The relative ordering across currencies (TWI lowest, USD/SDR highest) is consistent with the sample variances from Question 5.
 
 ---
 
@@ -331,16 +337,16 @@ where Φ is the standard Normal CDF.
 | CNY      | −0.0049 | 0.4850 | 0.5123  | −0.0057 | 0.4916 | 0.5127  |
 | USD      | −0.0025 | 0.4931 | 0.5101  | −0.0023 | 0.4844 | 0.5101  |
 | TWI      | −0.0543 | 0.4005 | 0.5638  | −0.0014 | 0.4075 | 0.5111  |
-| SDR      | −0.0505 | 0.4792 | 0.5503  | −0.0332 | 0.4797 | 0.5359  |
+| SDR      | −0.0136 | 0.4675 | 0.5201  | −0.0098 | 0.4704 | 0.5168  |
 
 All probabilities exceed 0.50 because mean returns are slightly negative — the AUD has depreciated modestly on average over the sample, so there is a marginally higher chance any given day's return falls below the 0.01% threshold.
 
 For a foreign currency investor, a higher P(e < 0.01%) means a higher chance of earning essentially zero or negative returns — more downside risk. The preferred currency is the one with the **lowest** probability.
 
-On **13 January**, the safest investment is **USD** (P = 0.5101), closely followed by CNY (0.5123). Both have near-zero conditional means, reflecting close-to-random-walk behaviour in those exchange rates. SDR (0.5503) and TWI (0.5638) show substantially elevated downside risk: TWI's T+1 conditional mean is −0.054% (ARMA(2,2) momentum carrying through a recent negative return) and SDR's mean is −0.051%, both pushing significant probability mass below the 0.01% threshold.
+On **13 January**, the safest investment is **USD** (P = 0.5101), closely followed by CNY (0.5123). Both have near-zero conditional means, reflecting close-to-random-walk behaviour. SDR (0.5201) and TWI (0.5638) show elevated downside risk at T+1: TWI's conditional mean is −0.054% (ARMA(2,2) momentum from a recent sequence of negative AUD/TWI returns) while SDR's mean is −0.014%, both pushing probability mass below the 0.01% threshold.
 
-On **14 January**, the ranking tightens considerably. TWI (0.5111) reverts almost completely to near-USD levels — its ARMA mean equation mean-reverts rapidly by h = 2, making it the second-safest. **USD** (0.5101) remains the safest. CNY (0.5127) holds steady with minimal change. SDR (0.5359) remains the riskiest currency on the second day, as its ARMA(2,2) mean equation reverts more slowly, maintaining a conditional mean of −0.033% at T+2.
+On **14 January**, the ranking tightens. TWI (0.5111) reverts almost completely — its ARMA mean equation mean-reverts rapidly by h = 2, making it the second-safest. **USD** (0.5101) remains the safest. CNY (0.5127) is essentially unchanged. SDR (0.5168) also reverts substantially, its conditional mean moving from −0.014% to −0.010% at T+2, approaching near-USD levels by the second day.
 
-This illustrates a key feature of ARMA-GARCH forecasts: T+1 downside risk is dominated by short-run conditional mean dynamics, while T+2 probabilities converge as the mean equation reverts toward zero. The degree of reversion varies by currency — TWI reverts almost completely, while SDR retains meaningful downside skew into the second day.
+This illustrates a key feature of ARMA-GARCH forecasts: T+1 downside risk is driven by short-run conditional mean dynamics, while T+2 probabilities converge as the ARMA mean equation reverts toward zero. All four currencies are within a ~0.05 probability band by T+2, with USD remaining the most attractive and TWI (despite its large T+1 deviation) recovering quickly.
 
 In practice, a risk manager would favour **USD** given its consistently low and stable downside probability across both horizons, consistent with its near-zero conditional mean and moderate, well-estimated volatility.
