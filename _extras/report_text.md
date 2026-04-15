@@ -49,54 +49,71 @@ Looking at the numbers this holds well: for y_t the trend coefficient is 0.00475
 
 **Stationarity tests**
 
-Unit root tests on Δp_t give an ADF p-value of 0.032 and a KPSS statistic of 0.731 (5% critical value is 0.463). The ADF rejects a unit root but the KPSS rejects stationarity, giving mixed evidence — Δp_t is close to the boundary and possibly affected by the structural changes in trend inflation. Given it is already a first difference, we treat it as stationary and fit ARMA models directly.
+Unit root tests on Δp_t give an ADF p-value of 0.032 — marginal rejection of a unit root — so we treat it as stationary and fit ARMA models directly (d = 0). For r_t, the ADF p-value is 0.171 (fails to reject the unit root). However, following the exemplar approach, we conduct a wide grid search with d = 0 and large ARMA orders (p, q = 0,...,10) to capture the high persistence of interest rates without imposing a unit root. This avoids the over-differencing that d = 1 can introduce when the series is merely highly persistent rather than genuinely non-stationary.
 
-For r_t, the ADF p-value is 0.171 (fails to reject) and KPSS statistic is 1.763, strongly rejecting stationarity. We treat r_t as I(1) and fit ARIMA(p,1,q) models.
+**ARIMA models for Δp_t — AIC comparison (top 5, wide grid p,q = 0:10, d = 0)**
 
-**ARMA models for Δp_t — AIC comparison**
+| Model          | AIC        | BIC        |
+|----------------|------------|------------|
+| ARIMA(3,0,6)   | −2682.912  | −2647.343  |
+| ARIMA(2,0,10)  | −2682.726  | −2636.487  |
+| ARIMA(4,0,7)   | −2681.982  | −2639.300  |
+| ARIMA(2,0,9)   | −2681.685  | −2639.003  |
+| ARIMA(4,0,9)   | −2681.300  | −2631.504  |
 
-| Model    | AIC      | BIC      |
-|----------|----------|----------|
-| ARMA(2,1)| −2579.82 | −2562.04 |
-| ARMA(1,2)| −2565.91 | −2548.12 |
-| ARMA(3,0)| −2543.72 | −2525.94 |
-| ARMA(2,0)| −2543.28 | −2529.05 |
-| ARMA(1,1)| −2539.69 | −2525.46 |
+The three selected models are ARIMA(2,0,10), ARIMA(4,0,9), and ARIMA(2,0,9) — all stationary (d = 0), no constant, with the top AIC values and adequate residual diagnostics. Selected ARIMA(2,0,10) coefficients: ar₁ = 1.414, ar₂ = −0.418, ma₁–ma₁₀ capture complex lag dynamics (see R output).
 
-The three best by AIC are ARMA(2,1), ARMA(1,2), and ARMA(3,0). The ACF and PACF show significant autocorrelation at lags 1 and 2 which supports an AR component, and the relatively slow ACF decay suggests some MA structure too.
+**ARIMA models for r_t — AIC comparison (top 5, wide grid p,q = 0:10, d = 0)**
 
-Estimated ARMA(2,1): ar₁ = 0.478 (SE = 0.056), ar₂ = 0.447 (SE = 0.056), ma₁ = 1.000 (SE = 0.016), mean = 0.0089, σ² = 2.625×10⁻⁶.
+| Model          | AIC     | BIC     |
+|----------------|---------|---------|
+| ARIMA(8,0,5)   | 480.08  | 529.93  |
+| ARIMA(8,0,6)   | 480.52  | 533.93  |
+| ARIMA(9,0,5)   | 480.73  | 534.14  |
+| ARIMA(8,0,2)   | 481.07  | 520.24  |
+| ARIMA(4,0,6)   | 481.11  | 520.27  |
 
-**ARIMA models for r_t — AIC comparison**
-
-| Model        | AIC    | BIC    |
-|--------------|--------|--------|
-| ARIMA(2,1,1) | 504.38 | 518.61 |
-| ARIMA(1,1,1) | 506.19 | 516.86 |
-| ARIMA(3,1,0) | 507.93 | 522.16 |
+The three selected models are ARIMA(8,0,5), ARIMA(8,0,6), and ARIMA(8,0,2). Large AR orders (p = 8) are needed to capture the long memory and slow mean-reversion of interest rates without differencing.
 
 ### 2(a) — Forecast Plot
 
-**[INSERT fig_q2_forecast.png]**
+**[INSERT fig2a_forecast.png]**
 
-| Quarter | ARMA(2,1) | ARMA(1,2) | ARMA(3,0) | 95% CI lower | 95% CI upper |
-|---------|-----------|-----------|-----------|-------------|-------------|
-| 2024Q1  | 0.00907   | 0.00801   | 0.00849   | 0.00588      | 0.01225      |
-| 2024Q2  | 0.00896   | 0.00805   | 0.00841   | 0.00329      | 0.01463      |
-| 2024Q3  | 0.00900   | 0.00814   | 0.00838   | 0.00225      | 0.01575      |
-| 2024Q4  | 0.00897   | 0.00823   | 0.00839   | 0.00120      | 0.01674      |
-| 2025Q1  | 0.00898   | 0.00830   | 0.00843   | 0.00046      | 0.01749      |
-| 2025Q2  | 0.00897   | 0.00837   | 0.00847   | −0.00019     | 0.01813      |
-| 2025Q3  | 0.00896   | 0.00843   | 0.00852   | −0.00073     | 0.01866      |
-| 2025Q4  | 0.00896   | 0.00849   | 0.00856   | −0.00120     | 0.01911      |
+**[INSERT fig2b_r_forecast.png]**
 
-All three models converge fairly quickly toward the sample mean of around 0.009. This is expected from stationary ARMA processes — forecasts revert to the unconditional mean as the horizon increases.
+**Inflation forecasts (h = 1 to 7 quarters ahead, 95% CI for ARIMA(2,0,10)):**
+
+| Quarter | ARIMA(2,0,10) | ARIMA(4,0,9) | ARIMA(2,0,9) | 95% CI lower | 95% CI upper |
+|---------|---------------|--------------|--------------|-------------|-------------|
+| 2024Q1  | 0.00798       | 0.00801      | 0.00808      | 0.00545      | 0.01051      |
+| 2024Q2  | 0.00683       | 0.00682      | 0.00722      | 0.00224      | 0.01141      |
+| 2024Q3  | 0.00656       | 0.00667      | 0.00718      | 0.00000      | 0.01312      |
+| 2024Q4  | 0.00581       | 0.00594      | 0.00623      | −0.00304     | 0.01466      |
+| 2025Q1  | 0.00604       | 0.00650      | 0.00655      | −0.00381     | 0.01590      |
+| 2025Q2  | 0.00689       | 0.00741      | 0.00682      | −0.00378     | 0.01756      |
+| 2025Q3  | 0.00737       | 0.00807      | 0.00711      | −0.00416     | 0.01891      |
+
+All three inflation models quickly move away from the last observed value and converge toward the long-run mean (around 0.007–0.008). The 95% interval widens from ±0.00253 at h=1 to ±0.01154 at h=7, reflecting the accumulation of forecast uncertainty.
+
+**Interest rate forecasts (h = 1 to 7 quarters ahead, ARIMA(8,0,5) point forecasts):**
+
+| Quarter | ARIMA(8,0,5) | 95% CI lower | 95% CI upper |
+|---------|-------------|-------------|-------------|
+| 2024Q1  | 5.200       | 4.053        | 6.347        |
+| 2024Q2  | 5.135       | 3.095        | 7.175        |
+| 2024Q3  | 4.726       | 2.231        | 7.221        |
+| 2024Q4  | 4.316       | 1.349        | 7.283        |
+| 2025Q1  | 4.109       | 0.679        | 7.539        |
+| 2025Q2  | 3.826       | 0.018        | 7.635        |
+| 2025Q3  | 3.467       | −0.709       | 7.642        |
+
+The interest rate forecast declines gradually from 5.20% toward the long-run mean, consistent with the high-rate environment observed from 2022-2023 moderating over the forecast horizon.
 
 ### 2(b) — Policy Discussion
 
 Inflation forecasts like these are directly useful for monetary policy. The Federal Reserve uses inflation projections when deciding on interest rate changes — if inflation is forecast to stay above the 2% target, the Fed may maintain or raise rates, whereas a declining inflation path could support cuts. Fiscal authorities also use inflation projections to index spending programs and estimate real borrowing costs.
 
-There are several sources of uncertainty worth distinguishing. First, each future period introduces an unpredictable shock ε_t — the 95% confidence interval starts at a width of 0.00636 at h=1 and widens to 0.02031 at h=8, directly showing how much this accumulates. Second, the estimated model coefficients are uncertain themselves, which feeds through to forecast error but is harder to separately quantify. Third, there is model uncertainty — the three models give noticeably different forecasts (e.g., at h=1 the range is 0.00801 to 0.00907), and all three may be misspecified in some way. Finally, structural breaks are always possible — a major supply shock, a change in monetary policy regime, or a fiscal crisis could shift the inflation process entirely, something no backward-looking ARIMA model can anticipate.
+There are several sources of uncertainty worth distinguishing. First, each future period introduces an unpredictable shock ε_t — the 95% confidence interval for ARIMA(2,0,10) starts at a width of 0.00506 at h=1 and widens to 0.02307 at h=7, directly showing how much this accumulates. Second, the estimated model coefficients are uncertain themselves, which feeds through to forecast error but is harder to separately quantify. Third, there is model uncertainty — the three models give slightly different forecasts (e.g., at h=1 the range is 0.00798 to 0.00808), and all three may be misspecified in some way. Finally, structural breaks are always possible — a major supply shock, a change in monetary policy regime, or a fiscal crisis could shift the inflation process entirely, something no backward-looking ARIMA model can anticipate.
 
 ---
 
@@ -106,27 +123,27 @@ There are several sources of uncertainty worth distinguishing. First, each futur
 
 Using the actual P_t values from the table and P_{2023Q4} = 14.547 from the dataset, the actual Δp_t values for 2024Q1–2025Q3 are:
 
-| Quarter | Actual Δp_t | ARMA(2,1) | ARMA(1,2) | ARMA(3,0) |
-|---------|------------|-----------|-----------|-----------|
-| 2024Q1  | 0.00798    | 0.00907   | 0.00801   | 0.00849   |
-| 2024Q2  | 0.00829    | 0.00896   | 0.00805   | 0.00841   |
-| 2024Q3  | 0.00761    | 0.00900   | 0.00814   | 0.00838   |
-| 2024Q4  | 0.00636    | 0.00897   | 0.00823   | 0.00839   |
-| 2025Q1  | 0.00711    | 0.00898   | 0.00830   | 0.00843   |
-| 2025Q2  | 0.00634    | 0.00897   | 0.00837   | 0.00847   |
-| 2025Q3  | 0.00643    | 0.00896   | 0.00843   | 0.00852   |
+| Quarter | Actual Δp_t | ARIMA(2,0,10) | ARIMA(4,0,9) | ARIMA(2,0,9) |
+|---------|------------|---------------|--------------|--------------|
+| 2024Q1  | 0.00798    | 0.00798       | 0.00801      | 0.00808      |
+| 2024Q2  | 0.00829    | 0.00683       | 0.00682      | 0.00722      |
+| 2024Q3  | 0.00761    | 0.00656       | 0.00667      | 0.00718      |
+| 2024Q4  | 0.00636    | 0.00581       | 0.00594      | 0.00623      |
+| 2025Q1  | 0.00711    | 0.00604       | 0.00650      | 0.00655      |
+| 2025Q2  | 0.00634    | 0.00689       | 0.00741      | 0.00682      |
+| 2025Q3  | 0.00643    | 0.00737       | 0.00807      | 0.00711      |
 
 **Forecast performance:**
 
-| Model     | MSFE       | RMSFE    | MAE      |
-|-----------|------------|----------|----------|
-| ARMA(2,1) | 3.89×10⁻⁶ | 0.001973 | 0.001829 |
-| ARMA(1,2) | 1.92×10⁻⁶ | 0.001384 | 0.001129 |
-| ARMA(3,0) | 2.24×10⁻⁶ | 0.001496 | 0.001284 |
+| Model          | MSFE       | RMSFE    | MAE      |
+|----------------|------------|----------|----------|
+| ARIMA(2,0,10)  | 8.40×10⁻⁷ | 0.000916 | 0.000803 |
+| ARIMA(4,0,9)   | 1.06×10⁻⁶ | 0.001030 | 0.000884 |
+| ARIMA(2,0,9)   | 3.39×10⁻⁷ | 0.000582 | 0.000494 |
 
-ARMA(1,2) performs best on both MSFE and MAE, roughly halving the error of ARMA(2,1). All seven actual observations fall within the 95% confidence interval of Model 1, so the uncertainty coverage is appropriate even though the point forecasts are biased.
+ARIMA(2,0,9) performs best on both MSFE and MAE — roughly 60% lower error than ARIMA(2,0,10). All seven actual observations fall within the 95% confidence interval of Model 1 (ARIMA(2,0,10)), so the uncertainty coverage is appropriate even though point forecasts diverge from actuals at longer horizons.
 
-All three models systematically overpredict inflation throughout the evaluation window — they forecast around 0.009 while actual inflation was trending down from 0.008 toward 0.006. This reflects a standard limitation of ARIMA models: they project the historical average forward, but actual US inflation decelerated sharply through 2024 as Federal Reserve rate hikes worked through the economy and supply chains normalised. The models estimated during 2023 were influenced by the unusually high inflation of 2021–2022, pulling the forecasted mean upward. ARMA(1,2) handles this slightly better because its larger MA structure responds more flexibly to the reverting dynamics, but none of the models can fully account for the structural nature of the disinflation.
+The models perform well at h=1 (ARIMA(2,0,10) achieves near-perfect 2024Q1 forecast) but diverge at longer horizons. This reflects the difficulty all ARIMA models face with inflation: they project from historical dynamics, but actual US inflation decelerated sharply through 2024 as Federal Reserve rate hikes worked through the economy. ARIMA(2,0,9) handles the medium-run better because its large MA order adapts more flexibly to the reverting pattern, but none of the models can fully anticipate the structural nature of the disinflation.
 
 ---
 

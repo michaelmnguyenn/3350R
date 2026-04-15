@@ -443,8 +443,8 @@ def build_docx() -> None:
             i = j
             continue
 
-        # Figure block (line starts with **Figure)
-        if line.startswith("**Figure"):
+        # Figure block (line starts with **Figure or **[INSERT ...png...])
+        if line.startswith("**Figure") or (line.startswith("**[INSERT") and ".png" in line):
             add_figure_block(document, line)
             i += 1
             continue
