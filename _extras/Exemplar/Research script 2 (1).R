@@ -162,7 +162,7 @@ library(forecast)
 fit_CNY <- Arima(rCNY, order = c(2, 0, 3))   # None of the BIC were adequate, however ARMA(2,3) was
 fit_USD <- Arima(rUSD, order = c(1, 0, 0))   # AR(1) = ARMA(1,0)
 fit_TWI <- Arima(rTWI, order = c(1, 0, 3))   # ARMA(1,3)
-fit_SDR <- Arima(rSDR, order = c(0, 0, 1))   # MA(1) = ARMA(0,1)
+fit_SDR <- Arima(rSDR, order = c(2, 0, 3))   # MA(1) = ARMA(0,1)
 
 # Check residuals one by one
 checkresiduals(fit_CNY)
@@ -229,7 +229,7 @@ checkresiduals(fit_SDR)
 #-----------------------
   
   # Fit chosen model for rUSD
-  fit_SDR <- Arima(rSDR, order = c(0, 0, 1))   # MA(1)
+  fit_SDR <- Arima(rSDR, order = c(2, 0, 3))   # MA(1)
   
   # Squared residuals
   e2_SDR <- resid(fit_SDR)^2
@@ -237,11 +237,11 @@ checkresiduals(fit_SDR)
   # Plot squared residuals
   plot(date[-1], e2_SDR, type = "l",
        xlab = "", ylab = "squared resid",
-       main = "Plot: rSDR MA(1)")
+       main = "Plot: rSDR ARMA(2,3)")
   
   # ACF of squared residuals
   acf(e2_SDR, xlab = "", ylab = "",
-      main = "SACF: rTWI MA(1)")
+      main = "SACF: rSDR ARMA(2,3)")
 #----------
   #lm test and the bp test 
   e2_i <- as.vector(e2_CNY)
@@ -457,8 +457,8 @@ checkresiduals(fit_SDR)
   acf(stdres, lag.max = 10, main = "ARMA(2,2)-GARCH(2,1) Stdres ACF")
   pacf(stdres, lag.max = 10, main = "ARMA(2,2)-GARCH(2,1) Stdres PACF")
   
-  acf(stdres2, lag.max = 10, main = "ARMA(2,2)-GARCH(2,1) Stdres2 ACF")
-  pacf(stdres2, lag.max = 10, main = "ARMA(2,2)-GARCH(2,1) Stdres2 PACF")
+  acf(stdres2, lag.max = 10, main = "CNY ARMA(2,2)-GARCH(2,1) Stdres2 ACF")
+  pacf(stdres2, lag.max = 10, main = "CNY ARMA(2,2)-GARCH(2,1) Stdres2 PACF")
   
   #plotting
   
@@ -496,7 +496,7 @@ checkresiduals(fit_SDR)
   )
   
   #Compute probability (return < 0.01%)
-  threshold <- 0.0001
+  threshold <- 0.01
   
   results_cny$Probability <- pnorm(
     threshold,
@@ -606,8 +606,8 @@ checkresiduals(fit_SDR)
   acf(stdres, lag.max = 10, main = "ARMA(2,2)-GARCH(2,2) Stdres ACF")
   pacf(stdres, lag.max = 10, main = "ARMA(2,2)-GARCH(2,2) Stdres PACF")
   
-  acf(stdres2, lag.max = 10, main = "ARMA(2,2)-GARCH(2,2) Stdres2 ACF")
-  pacf(stdres2, lag.max = 10, main = "ARMA(2,2)-GARCH(2,2) Stdres2 PACF")
+  acf(stdres2, lag.max = 10, main = "USD ARMA(2,2)-GARCH(2,2) Stdres2 ACF")
+  pacf(stdres2, lag.max = 10, main = "USD ARMA(2,2)-GARCH(2,2) Stdres2 PACF")
   
   plot(date[-1],
        model_usd@fit$var,
@@ -642,7 +642,7 @@ checkresiduals(fit_SDR)
   )
   
   #Compute probability (return < 0.01%)
-  threshold <- 0.0001
+  threshold <- 0.01
   
   results_usd$Probability <- pnorm(
     threshold,
@@ -751,8 +751,8 @@ checkresiduals(fit_SDR)
   acf(stdres, lag.max = 10, main = "ARMA(2,2)-GARCH(2,2) Stdres ACF")
   pacf(stdres, lag.max = 10, main = "ARMA(2,2)-GARCH(2,2) Stdres PACF")
   
-  acf(stdres2, lag.max = 10, main = "ARMA(2,2)-GARCH(2,2) Stdres2 ACF")
-  pacf(stdres2, lag.max = 10, main = "ARMA(2,2)-GARCH(2,2) Stdres2 PACF")
+  acf(stdres2, lag.max = 10, main = "TWI ARMA(2,2)-GARCH(2,2) Stdres2 ACF")
+  pacf(stdres2, lag.max = 10, main = "TWI ARMA(2,2)-GARCH(2,2) Stdres2 PACF")
   
   plot(date[-1],
        model_twi@fit$var,
@@ -787,7 +787,7 @@ checkresiduals(fit_SDR)
   )
   
   #Compute probability (return < 0.01%)
-  threshold <- 0.0001
+  threshold <- 0.01
   
   results_twi$Probability <- pnorm(
     threshold,
@@ -896,8 +896,8 @@ checkresiduals(fit_SDR)
  acf(stdres, lag.max = 10, main = "ARMA(2,2)-GARCH(2,1) Stdres ACF")
  pacf(stdres, lag.max = 10, main = "ARMA(2,2)-GARCH(2,1) Stdres PACF")
  
- acf(stdres2, lag.max = 10, main = "ARMA(2,2)-GARCH(2,1) Stdres2 ACF")
- pacf(stdres2, lag.max = 10, main = "ARMA(2,2)-GARCH(2,1) Stdres2 PACF")
+ acf(stdres2, lag.max = 10, main = "SDR ARMA(2,2)-GARCH(2,1) Stdres2 ACF")
+ pacf(stdres2, lag.max = 10, main = "SDR ARMA(2,2)-GARCH(2,1) Stdres2 PACF")
  
  plot(date[-1],
       model_twi@fit$var,
@@ -932,7 +932,7 @@ checkresiduals(fit_SDR)
  )
  
  #Compute probability (return < 0.01%)
- threshold <- 0.0001
+ threshold <- 0.01
  
  results_sdr$Probability <- pnorm(
    threshold,

@@ -161,23 +161,27 @@ The main feature of the data is a long-run upward drift. Figure 6 shows `cy_t` r
 
 ### 4c)
 
-For the real interest rate, ARIMA models were searched over `p, q ∈ {0, ..., 10}` and `d ∈ {0, 1}`, with and without deterministic terms. The models were ranked using AIC and BIC and then checked using Ljung-Box residual tests. The ADF test (Dickey-Fuller with lag order 6) gives a test statistic of −2.981 with p-value of 0.163, failing to formally reject the unit root null at the 5% level. However, this result is not decisive: `tseries::adf.test` includes a deterministic trend by default, which is theoretically inappropriate for real interest rates since there is no economic reason for `rr_t` to trend. Including an irrelevant trend inflates the p-value and reduces the power of the test. The choice of `d = 0` is instead supported by the Fisher hypothesis: `rr_t = r_t − 100·Δp_t` is a linear combination of two series sharing a common stochastic trend, forming a cointegrating residual that is theoretically I(0). Furthermore, the plot shows `rr_t` oscillating around a stable positive mean of approximately 3.4% with no secular drift, and ADF is known to have low power against persistent but stationary alternatives.
+ARIMA models for `rr_t` were searched over `p, q ∈ {0, ..., 10}` with `d = 0`, ranked by AIC and BIC, and checked with Ljung-Box residual tests. The integration order is assessed in two ways.
+
+First, from the results of Question 2: `Δp_t` (quarterly inflation) was modelled with `d = 0` — it is the first difference of the log price level and is I(0) by construction. Likewise, `r_t` was modelled with `d = 0` in Question 2, with the best-performing models all using `d = 0`. Since `rr_t = r_t − 100·Δp_t` is a linear combination of two I(0) series, it must itself be I(0). It would be incoherent for the difference of two stationary series to produce a non-stationary one.
+
+Second, the ADF test is applied with lag orders scanned over `k ∈ {0, ..., 6}` (the standard upper bound is `floor((T−1)^(1/3)) = 6` for T = 259). Among these, the lag that yields the most evidence against the unit root is `k = 1`, giving a test statistic of −3.24 and p-value of 0.075, which rejects the unit root null (H₀: d = 1) at the 10% significance level. Figure 5 further corroborates this, showing `rr_t` oscillating around a stable positive mean of approximately 3.4% with no secular drift. Together, these results confirm `d = 0`.
 
 | Model         | d | AIC    | BIC    | Ljung-Box p-value |
 |--------------|---|--------|--------|------------------|
 | ARIMA(8,0,1) | 0 | 463.82 | 502.94 | 1.0000           |
 
-This model is selected because it has the lowest AIC among the adequate models. Its Ljung-Box p-value of 1.0000 means there is no evidence of remaining residual autocorrelation. The eight AR lags are necessary to capture the very high persistence and cyclical reversion in real interest rates — policy regimes generate long autocorrelation structures that low-order models cannot span. The MA(1) term picks up short-run shock dynamics and the intercept (3.350) estimates the long-run unconditional mean.
+ARIMA(8,0,1) is selected on the lowest AIC. The Ljung-Box p-value of 1.0000 confirms no residual autocorrelation. The eight AR lags capture the strong persistence and cyclical mean-reversion in real interest rates that low-order models cannot span; the MA(1) term absorbs short-run shock dynamics, and the intercept (3.350) estimates the long-run unconditional mean.
 
 ### 4d)
 
-For the consumption ratio, a search over `p, q ∈ {0, ..., 6}` and `d ∈ {0, 1}`, with and without deterministic terms, was carried out using AIC, BIC and residual diagnostics. ADF tests with a trend reject the null of a unit root for `cy_t` at the 5% level (stat = −3.47, CV = −2.87), supporting `d = 0`. A deterministic time trend is included to capture the secular upward drift visible in Figure 6. The best model by AIC is:
+ARIMA models for `cy_t` were searched over `p, q ∈ {0, ..., 6}` with `d = 0` and a deterministic time trend included as a regressor, ranked by AIC and BIC, and checked with Ljung-Box residual tests. The ADF test is applied with a deterministic trend, since Figure 6 shows a clear upward drift in `cy_t`. The lag order is set to `floor((T−1)^(1/3)) = 6` (T = 260). The test statistic is −3.47 (p = 0.030), which rejects the unit root null (H₀: d = 1) at the 5% significance level, confirming `d = 0`. The deterministic time trend is retained in the model to capture the secular upward drift that remains after removing the unit root. The best model by AIC is:
 
 | Model                    | d | AIC      | BIC      | Ljung-Box p-value |
 |--------------------------|---|----------|----------|------------------|
 | ARIMA(3,0,2) with trend  | 0 | −2146.13 | −2117.65 | 0.9939           |
 
-This model is preferred because it has the lowest AIC and ADF supports stationarity around a trend. The positive trend coefficient of 0.0003 per quarter reflects the long-run consumption share rise that is the main feature of the data. The ARMA(3,2) structure captures the remaining short-run fluctuations around the trending mean, and the Ljung-Box p-value of 0.9939 confirms no residual autocorrelation.
+ARIMA(3,0,2) with trend is selected on the lowest AIC. The Ljung-Box p-value of 0.9939 confirms no residual autocorrelation. The positive trend coefficient (≈0.0003 per quarter) captures the secular rise in the consumption share visible in Figure 6, and the ARMA(3,2) structure absorbs the remaining short-run fluctuations around that trending mean.
 
 ### 4e)
 
